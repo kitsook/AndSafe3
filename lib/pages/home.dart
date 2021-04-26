@@ -391,7 +391,7 @@ class _NoteListState extends State<_NoteList> {
   }
 
   Widget _buildWebSiteLauncher() {
-    final Uri home = Uri.https('github.com', '/kitsook/andsafe');
+    final Uri home = Uri.https('github.com', '/kitsook/AndSafe3');
 
     return ListTile(
       leading: Icon(Icons.launch_rounded),

@@ -30,8 +30,6 @@ dependencies:
   path: ^1.8.0
   convert: ^3.0.0
   pointycastle: ^3.0.1
-  # pointycastle:
-  #   path: /home/cho/work/pc-dart
   loading_overlay: ^0.3.0
   logging: ^1.0.1
   file_picker: ^3.0.1
@@ -42,7 +40,6 @@ dependencies:
   package_info: ^2.0.0
   intl: ^0.17.0
   path_provider: ^2.0.1
-  # ext_storage: ^1.0.3
   url_launcher: ^6.0.3
   provider: ^5.0.0
 

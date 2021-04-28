@@ -2,7 +2,7 @@
 
 # AndSafe
 
-AndSafe is an Android app that encrypts plain text notes. With version 3, AndSafe3 is re-implemented with Flutter and is now open source.
+[AndSafe](https://play.google.com/store/apps/details?id=net.clarenceho.andsafe3) is an Android app that encrypts plain text notes. With version 3, AndSafe3 is re-implemented with Flutter and is now open source.
 
 ## FAQ
 **I can't remember my password. Can you help me?**

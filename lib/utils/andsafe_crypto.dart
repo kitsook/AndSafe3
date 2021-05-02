@@ -227,6 +227,7 @@ Future<Uint8List> _hashPassword(
     }
   }
 
+  // fallback to Dart version
   log.fine("Deriving key...");
   final kd = KeyDerivator('scrypt');
   kd.init(ScryptParameters(16384, 8, 1, length, salt));

@@ -424,7 +424,7 @@ class _NoteListState extends State<_NoteList> {
                       arguments: {'password': this._password}
                   ).then((value) {
                     if (value == 'doDelete') {
-                      _doDeleteNote(id!);
+                      return _doDeleteNote(id!);
                     }
                   }).whenComplete(() {
                     setState(() {

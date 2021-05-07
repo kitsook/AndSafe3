@@ -1,6 +1,7 @@
 import 'package:andsafe/models/note.dart';
 import 'package:andsafe/models/signature.dart';
 import 'package:andsafe/utils/services/preferences_service.dart';
+import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
 DatabaseAdapter adapter = DatabaseAdapter();
@@ -13,9 +14,10 @@ class DatabaseAdapter {
     this._database = _init();
   }
 
-  Future<Database> _init() {
+  Future<Database> _init() async {
+    String dbFullPath = join(await getDatabasesPath(), 'safe.db');
     return openDatabase(
-      'safe.db',
+      dbFullPath,
       onCreate: (db, version) async {
         // create tables on first run
         await db.execute(

@@ -160,10 +160,9 @@ class _ImportPageState extends State {
           allowedExtensions: ['xml'],
         );
         if (result != null &&
-            result.files.single.path != null &&
-            result.files.single.name != null) {
+            result.files.single.path != null) {
           _importFullPath = result.files.single.path;
-          _fileNameController.text = result.files.single.name!;
+          _fileNameController.text = result.files.single.name;
         }
       },
     );

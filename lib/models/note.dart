@@ -33,7 +33,7 @@ class Note {
       data['body']!,
       data['salt']!,
       data['iv']!,
-      DateTime.fromMillisecondsSinceEpoch(data['last_update'].round() * 1000),
+      DateTime.fromMillisecondsSinceEpoch((data['last_update'] * 1000).round()),
     );
   }
 }

@@ -4,6 +4,8 @@ import 'package:andsafe/utils/services/preferences_service.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
+
+
 DatabaseAdapter adapter = DatabaseAdapter();
 const _currentDatabaseVersion = 2;
 
@@ -129,7 +131,7 @@ class DatabaseAdapter {
     List<Map> rows = await db.query(
       'notes',
       // orderBy: sortBy + (sortAscending? ' asc' : ' desc') + ', _id asc',
-      orderBy: '_id asc',
+      // orderBy: '_id asc',
     );
     // TODO sort and filter with sql query instead of doing it after retrieving all notes
     final List<Note> notes = rows
@@ -137,15 +139,10 @@ class DatabaseAdapter {
       .map((row) => Note.fromMap(row as Map<String, dynamic>))
       .toList();
     notes.sort((a, b) {
-      if (!sortAscending) {
-        var temp = b;
-        b = a;
-        a = temp;
-      }
       if (sortBy == PREF_SORT_KEY_TITLE) {
-        return a.title.toUpperCase().compareTo(b.title.toUpperCase());
+        return a.title.toUpperCase().compareTo(b.title.toUpperCase()) * (sortAscending? 1 : -1);
       }
-      return a.lastUpdate.compareTo(b.lastUpdate);
+      return a.lastUpdate.compareTo(b.lastUpdate) * (sortAscending? 1 : -1);
     });
     return notes;
   }

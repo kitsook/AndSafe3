@@ -226,12 +226,13 @@ class _NoteEditState extends State<_NoteEdit> {
                     : bodyFieldController.text,
                 password,
               );
+              int? newId = id;
               if (id == null) {
-                await db.adapter.insertNote(theNote);
+                newId = await db.adapter.insertNote(theNote);
               } else {
                 await db.adapter.updateNote(theNote);
               }
-              Navigator.pop(context);
+              Navigator.pop(context, newId);
             } catch (e) {
               log.severe("Failed to save the note");
               log.severe(e.toString());

@@ -38,8 +38,11 @@ class _NoteList extends StatefulWidget {
 
 class _NoteListState extends State<_NoteList> {
   String? _password;
+  List<Note> _notes = [];
   bool _isBusy = false;
   final _searchFieldController = TextEditingController();
+  final _notesScrollController = ScrollController();
+  int? _scrollTo;
 
   _NoteListState(String? password) {
     this._password = password;
@@ -88,7 +91,7 @@ class _NoteListState extends State<_NoteList> {
           child: Container(
             child: FutureBuilder(
               // to refresh the list with setState, don't use previously-obtained future
-              future: Future.wait([_getNotes(), Prefs.getSwipeToDelete()]),
+              future: Future.wait([_reloadNotes(), Prefs.getSwipeToDelete()]),
               builder:
                   (BuildContext context, AsyncSnapshot<List<Object>> snapshot) {
                 if (snapshot.hasError) {
@@ -97,11 +100,26 @@ class _NoteListState extends State<_NoteList> {
                   return Container(
                       child: Center(child: Text(AppLocalizations.of(context)!.problemLoadingNotes)));
                 }
+
+                if (snapshot.hasData && snapshot.connectionState == ConnectionState.done) {
+                  // jump to specific note if needed
+                  WidgetsBinding.instance?.addPostFrameCallback((_) {
+                    if (_notesScrollController.hasClients && _scrollTo != null) {
+                      // TODO do lookup instead of linear search
+                      final int pos = _notes.takeWhile((note) => note.id != _scrollTo).length;
+                      // FIXME calculate the offset by actual Card height
+                      _notesScrollController.animateTo(pos * 80,
+                          duration: Duration(milliseconds: 500), curve: Curves.ease);
+                      _scrollTo = null;
+                    }
+                  });
+                }
+
                 if (snapshot.data == null) {
                   return Container(
                       child: Center(child: CircularProgressIndicator()));
                 } else {
-                  return _buildNoteList(snapshot.data![0] as List<Note>, snapshot.data![1] as bool);
+                  return _buildNoteList(snapshot.data![1] as bool);
                 }
               },
             ),
@@ -111,12 +129,19 @@ class _NoteListState extends State<_NoteList> {
         onPressed: () {
           if (this._password != null) {
             FocusScope.of(context).unfocus();
-            Navigator.pushNamed(context, 'note/new',
-                arguments: {'password': this._password}).whenComplete(() {
-              setState(() {
-                // refresh the list
-              });
-            });
+            Navigator
+                .pushNamed(context, 'note/new',
+                  arguments: {'password': this._password})
+                .then((value) {
+                  if (value is int) {
+                    _scrollTo = value;
+                  }
+                })
+                .whenComplete(() {
+                  setState(() {
+                    // refresh the list
+                  });
+                });
           } else {
             _displayPasswordInputDialog(context);
           }
@@ -125,16 +150,19 @@ class _NoteListState extends State<_NoteList> {
     );
   }
 
-  Future<List<Note>> _getNotes() async {
+  Future<int> _reloadNotes() async {
     if (_searchFieldController.text.isEmpty) {
-      return db.adapter.getNotes();
+      _notes = await db.adapter.getNotes();
+      return _notes.length;
     }
     Set<int> ids =
         await db.adapter.searchNotes(_searchFieldController.text + '*');
     if (ids.isEmpty) {
-      return <Note>[];
+      _notes = <Note>[];
+      return 0;
     }
-    return db.adapter.getNotes(ids);
+    _notes = await db.adapter.getNotes(ids);
+    return _notes.length;
   }
 
   Widget _buildSearchField(context) {
@@ -165,8 +193,9 @@ class _NoteListState extends State<_NoteList> {
                 color: Theme.of(context).colorScheme.onPrimary),
             suffixIcon: IconButton(
               onPressed: () {
-                _searchFieldController.clear();
-                setState(() {});
+                setState(() {
+                  _searchFieldController.clear();
+                });
               },
               icon: Icon(Icons.clear_rounded),
               iconSize: 20.0,
@@ -402,12 +431,14 @@ class _NoteListState extends State<_NoteList> {
     );
   }
 
-  Widget _buildNoteList(List<Note> notes, bool swipeToDelete) {
+  Widget _buildNoteList(bool swipeToDelete) {
     final DateFormat formatter = DateFormat('yyyy-MM-dd HH:mm:ss');
+    final List<Note> notes = _notes;
 
     return Scrollbar(
       child: ListView.builder(
         itemCount: notes.length,
+        controller: _notesScrollController,
         itemBuilder: (BuildContext context, int index) {
           final theNote = notes[index];
 
@@ -477,7 +508,8 @@ class _NoteListState extends State<_NoteList> {
       ),
       key: UniqueKey(),
       onDismissed: (_) async {
-        _doDeleteNote(noteId);
+        _notes = _notes.where((n) => n.id != noteId).toList();
+        await _doDeleteNote(noteId);
       },
       child: child,
     );
@@ -498,6 +530,8 @@ class _NoteListState extends State<_NoteList> {
     );
     if (this._password != null) {
       await db.adapter.deleteNote(noteId);
+      setState(() {
+      });
       displaySnackBarMsg(
           context: context,
           msg: AppLocalizations.of(context)!.goingToDeleteNote,

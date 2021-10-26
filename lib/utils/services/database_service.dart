@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:andsafe/models/note.dart';
 import 'package:andsafe/models/signature.dart';
 import 'package:andsafe/utils/services/preferences_service.dart';
@@ -65,7 +67,7 @@ class DatabaseAdapter {
     return this._database;
   }
 
-  Future<void> insertNote(Note note) async {
+  Future<int> insertNote(Note note) async {
     final Database db = await this._database;
     int id = await db.insert(
       'notes',
@@ -76,6 +78,7 @@ class DatabaseAdapter {
       'searchable',
       {'docid': id, 'title': note.title}
     );
+    return id;
   }
 
   Future<void> updateNote(Note note, [Transaction? txn]) async {

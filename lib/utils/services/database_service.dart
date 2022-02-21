@@ -1,5 +1,3 @@
-import 'dart:collection';
-
 import 'package:andsafe/models/note.dart';
 import 'package:andsafe/models/signature.dart';
 import 'package:andsafe/utils/services/preferences_service.dart';

@@ -27,10 +27,14 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => ThemeChanger(themeMode),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<ThemeChanger>(
+          create: (_) => ThemeChanger(themeMode),
+        ),
+      ],
       child: Consumer<ThemeChanger>(
-        builder: (_, themeChanger, __) {
+        builder: (context, themeChanger, child) {
           return MaterialApp(
             // debugShowCheckedModeBanner: false,
             title: 'AndSafe',

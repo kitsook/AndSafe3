@@ -7,9 +7,10 @@ import 'package:andsafe/models/signature.dart';
 import 'package:andsafe/utils/helpers.dart';
 import 'package:andsafe/utils/logger.dart';
 import 'package:convert/convert.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:tuple/tuple.dart';
 import 'package:xml/xml.dart';
 
@@ -122,18 +123,18 @@ Future<void> exportNotes(String fullFilePath, Signature signature, List<Note> no
 }
 
 Future<String?> getNewExportFullFilePath() async {
-  List<Directory>? outputDirs = await getExternalStorageDirectories(
-      type: StorageDirectory.documents);
-  if (outputDirs == null || outputDirs.length == 0) {
-    outputDirs = await getExternalStorageDirectories(
-        type: StorageDirectory.downloads);
+  var status = await Permission.storage.status;
+  if (!status.isGranted) {
+    await Permission.storage.request();
   }
-  if (outputDirs == null || outputDirs.length == 0) {
+
+  String? outputDir = await FilePicker.platform.getDirectoryPath();
+  if (outputDir == null) {
     return null;
   }
 
   for (var i = 0; i < 5; i++) {
-    String fullFilPath = p.join(outputDirs[0].path, _newExportFileName());
+    String fullFilPath = p.join(outputDir, _newExportFileName());
     if (! await File(fullFilPath).exists()) {
       return fullFilPath;
     }

@@ -32,7 +32,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    compileSdkVersion 30
+    compileSdkVersion 33
 
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
@@ -40,8 +40,8 @@ android {
 
     defaultConfig {
         applicationId "net.clarenceho.andsafe3"
-        minSdkVersion 19
-        targetSdkVersion 30
+        minSdkVersion 21
+        targetSdkVersion 33
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }

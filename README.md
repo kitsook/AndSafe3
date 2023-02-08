@@ -1,8 +1,8 @@
 ![image](https://user-images.githubusercontent.com/13360325/116012081-3924ca80-a5dd-11eb-89ab-9c8543302d7b.png)
 
-# AndSafe
+# AndSafe3
 
-[AndSafe](https://play.google.com/store/apps/details?id=net.clarenceho.andsafe3) is an Android app that encrypts plain text notes. With version 3, AndSafe3 is re-implemented with Flutter and is now open source.
+[AndSafe3](https://play.google.com/store/apps/details?id=net.clarenceho.andsafe3) is an Android app that encrypts plain text notes. With version 3, AndSafe3 is re-implemented with Flutter and is now open source.
 
 ## FAQ
 **I can't remember my password. Can you help me?**

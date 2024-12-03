@@ -1,6 +1,7 @@
 ![image](https://user-images.githubusercontent.com/13360325/116012081-3924ca80-a5dd-11eb-89ab-9c8543302d7b.png)
 
 # AndSafe3
+*Note: due to changes of Google's policy on developer profile, the app is not listed on Google Play anymore. You can build the app from source code if needed.*
 
 [AndSafe3](https://play.google.com/store/apps/details?id=net.clarenceho.andsafe3) is an Android app that encrypts plain text notes. With version 3, AndSafe3 is re-implemented with Flutter and is now open source.
 

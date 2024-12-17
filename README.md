@@ -1,5 +1,11 @@
 ![image](https://user-images.githubusercontent.com/13360325/116012081-3924ca80-a5dd-11eb-89ab-9c8543302d7b.png)
 
+![image](https://github.com/user-attachments/assets/10f6a0a3-7325-42d0-b04d-0bb862eb23cf)&nbsp;&nbsp;&nbsp;
+![image](https://github.com/user-attachments/assets/9122b885-e487-414b-b320-bbff77c15d25)&nbsp;&nbsp;&nbsp;
+![image](https://github.com/user-attachments/assets/25dbb8f5-99fc-4da8-b874-442a75ed3c6b)&nbsp;&nbsp;&nbsp;
+
+
+
 # AndSafe3
 *Note: due to changes of Google's policy on developer profile, the app is not listed on Google Play anymore. You can build the app from source code if needed.*
 

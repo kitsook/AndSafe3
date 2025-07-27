@@ -196,7 +196,6 @@ class _NoteEditState extends State<_NoteEdit> {
       keyboardType: TextInputType.multiline,
       minLines: 5,
       maxLines: null,
-      enableSuggestions: false,
       autocorrect: false,
       decoration: new InputDecoration(
           contentPadding:

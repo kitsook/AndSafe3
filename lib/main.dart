@@ -2,7 +2,9 @@ import 'package:andsafe/config/routes/router.dart';
 import 'package:andsafe/utils/ThemeChanger.dart';
 import 'package:andsafe/utils/logger.dart';
 import 'package:andsafe/utils/services/preferences_service.dart';
+import 'package:flag_secure/flag_secure.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
@@ -24,9 +26,19 @@ class MyApp extends StatelessWidget {
 
   MyApp(this.themeMode);
 
+  Future<void> _setFlagSecure() async {
+    try {
+      await FlagSecure.set();
+    } on PlatformException catch (e) {
+      log.severe(e.toString());
+    }
+  }
+
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
+    _setFlagSecure();
+
     return ChangeNotifierProvider(
       create: (_) => ThemeChanger(themeMode),
       child: Consumer<ThemeChanger>(

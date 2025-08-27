@@ -38,6 +38,10 @@ The full-text search can only match from beginning of whole word. For example, i
 
 That is the limitation of the database search feature and to be backward compatible with older Android devices. Maybe in the future we can utilize another search engine.
 
+**Can I read the encrypted notes on computer?**
+
+The [PyAndSafe](https://github.com/kitsook/PyAndSafe) project has a Python script with GUI to read exported notes.
+
 ## Technical FAQ
 **What encryption algorithm is used?**
 

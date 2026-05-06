@@ -1,3 +1,4 @@
+import 'package:andsafe/l10n/app_localizations.dart';
 import 'package:andsafe/models/note.dart';
 import 'package:andsafe/models/signature.dart';
 import 'package:andsafe/utils/andsafe_crypto.dart';
@@ -8,10 +9,10 @@ import 'package:andsafe/utils/services/database_service.dart' as db;
 import 'package:andsafe/utils/services/export_import_service.dart';
 import 'package:andsafe/utils/services/preferences_service.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:loading_overlay/loading_overlay.dart';
-import 'package:package_info/package_info.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class HomePage extends StatelessWidget {
@@ -362,6 +363,13 @@ class _NoteListState extends State<_NoteList> {
                     }
                   },
                   // don't disable even when correct password is not entered
+                ),
+                ListTile(
+                  leading: Icon(Icons.exit_to_app_rounded),
+                  title: Text(AppLocalizations.of(context)!.exitApp),
+                  onTap: () {
+                    SystemNavigator.pop();
+                  },
                 ),
               ],
             ),

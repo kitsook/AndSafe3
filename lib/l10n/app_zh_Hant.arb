@@ -57,5 +57,6 @@
   "titleCannotBeEmpty": "請輸入標題",
   "textToBeEncrypted": "將會被加密的筆記",
   "failedToSaveTheNote": "未能儲存筆記",
-  "saveButton": "儲存"
+  "saveButton": "儲存",
+  "exitApp": "退出"
 }

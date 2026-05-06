@@ -1,4 +1,4 @@
-package net.clarenceho.andsafe
+package net.clarenceho.andsafe3
 
 import io.flutter.embedding.android.FlutterActivity
 

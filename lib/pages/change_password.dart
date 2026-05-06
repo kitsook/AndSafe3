@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:andsafe/l10n/app_localizations.dart';
 import 'package:andsafe/models/note.dart';
 import 'package:andsafe/models/signature.dart';
 import 'package:andsafe/utils/andsafe_crypto.dart';
@@ -7,7 +8,6 @@ import 'package:andsafe/utils/logger.dart';
 import 'package:andsafe/utils/notification.dart';
 import 'package:andsafe/utils/services/database_service.dart' as db;
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:loading_overlay/loading_overlay.dart';
 import 'package:sqflite/sqflite.dart';
 

@@ -1,5 +1,4 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="net.clarenceho.andsafe">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
    <application
         android:label="AndSafe3"
         android:icon="@mipmap/ic_launcher"

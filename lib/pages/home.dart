@@ -85,7 +85,9 @@ class _NoteListState extends State<_NoteList> {
           ),
         ],
       ),
-      drawer: _buildMainDrawer(),
+      drawer: SafeArea(
+        child: _buildMainDrawer(),
+      ),
       body: LoadingOverlay(
           isLoading: this._isBusy,
           progressIndicator: _buildLoadingIndicator(),

@@ -48,9 +48,11 @@ class MyApp extends StatelessWidget {
             title: 'AndSafe',
             theme: ThemeData(
               brightness: Brightness.light,
+              colorSchemeSeed: Colors.teal,
             ),
             darkTheme: ThemeData(
               brightness: Brightness.dark,
+              colorSchemeSeed: Colors.teal,
             ),
             themeMode: themeChanger.themeMode,
             initialRoute: 'signatureSetup',

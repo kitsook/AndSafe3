@@ -174,26 +174,17 @@ class _NoteListState extends State<_NoteList> {
         child: TextField(
           autofocus: false,
           controller: _searchFieldController,
-          style: TextStyle(color: Theme.of(context).colorScheme.onBackground),
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
           decoration: InputDecoration(
             filled: true,
-            fillColor: Theme.of(context).colorScheme.background,
+            fillColor: Theme.of(context).colorScheme.surface,
             isDense: true,
             contentPadding: EdgeInsets.all(10),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(30.0)),
-              borderSide: BorderSide(
-                color: Theme.of(context).colorScheme.onPrimary,
-              ),
+            prefixIcon: Icon(Icons.search_rounded),
+            prefixIconConstraints: BoxConstraints(
+              minWidth: 20,
+              minHeight: 20,
             ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(30.0)),
-              borderSide: BorderSide(
-                color: Theme.of(context).colorScheme.onPrimary,
-              ),
-            ),
-            prefixIcon: Icon(Icons.search_rounded,
-                color: Theme.of(context).colorScheme.onPrimary),
             suffixIcon: IconButton(
               onPressed: () {
                 setState(() {
@@ -204,8 +195,6 @@ class _NoteListState extends State<_NoteList> {
               iconSize: 20.0,
             ),
             hintText: AppLocalizations.of(context)!.searchTitle,
-            hintStyle:
-                TextStyle(color: Theme.of(context).colorScheme.onPrimary),
           ),
           onChanged: (_) {
             setState(() {});

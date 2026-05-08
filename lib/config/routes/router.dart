@@ -27,7 +27,7 @@ class AndSafeRouter {
       handler: changePasswordHandler,
     );
     router.define(
-      'import/:password',
+      'import',
       handler: importHandler,
     );
   }

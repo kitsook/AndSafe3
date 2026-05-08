@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:andsafe/l10n/app_localizations.dart';
 import 'package:andsafe/utils/andsafe_crypto.dart';
@@ -7,13 +9,23 @@ import 'package:andsafe/utils/notification.dart';
 import 'package:andsafe/utils/services/database_service.dart' as db;
 import 'package:andsafe/utils/services/export_import_service.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:loading_overlay/loading_overlay.dart';
 
-class ImportPage extends StatefulWidget {
-  final String _password;
+class ImportPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final arguments = ModalRoute.of(context)!.settings.arguments as Map?;
+    final Uint8List password = arguments!['password'];
+    return _ImportPageInternal(password);
+  }
+}
 
-  ImportPage(this._password);
+class _ImportPageInternal extends StatefulWidget {
+  final Uint8List _password;
+
+  _ImportPageInternal(this._password);
 
   @override
   State<StatefulWidget> createState() {
@@ -21,8 +33,8 @@ class ImportPage extends StatefulWidget {
   }
 }
 
-class _ImportPageState extends State {
-  final _password;
+class _ImportPageState extends State<_ImportPageInternal> {
+  final Uint8List _password;
   String? _importFullPath;
   final _formKey = GlobalKey<FormState>();
   final _passwordController = TextEditingController();
@@ -203,12 +215,14 @@ class _ImportPageState extends State {
             setState(() {
               this._isBusy = true;
             });
+            Uint8List? importPasswordBytes;
             try {
               log.fine('Importing from ${_importFullPath!}');
               final imported = parseNotesFromFile(_importFullPath!);
+              importPasswordBytes = Uint8List.fromList(utf8.encode(_passwordController.text));
 
               final verifyResult = await verifySignature(
-                  imported.item1, _passwordController.text);
+                  imported.item1, importPasswordBytes);
               log.fine("Verify import password result: $verifyResult");
               if (!verifyResult) {
                 displaySnackBarMsg(context: context, msg: AppLocalizations.of(context)!.incorrectImportPassword);
@@ -220,19 +234,19 @@ class _ImportPageState extends State {
                   // show progress on screen
                   _importProgressStreamController.add(++_currentlyImporting);
 
-                  if (this._password == _passwordController.text) {
+                  if (listEquals(this._password, importPasswordBytes)) {
                     // app password is same as import password. just import it with a new id
                     importedNote.id = null;
                     await db.adapter.insertNote(importedNote);
                   } else {
                     final decryptedBody = await getNotePlainBody(
-                        importedNote, _passwordController.text);
+                        importedNote, importPasswordBytes);
                     final newNote = await createNote(
                         null,
                         importedNote.categoryId,
                         importedNote.title,
                         decryptedBody,
-                        this._password!,
+                        this._password,
                         importedNote.lastUpdate);
                     await db.adapter.insertNote(newNote);
                   }
@@ -245,6 +259,7 @@ class _ImportPageState extends State {
               log.fine(e.toString());
               displaySnackBarMsg(context: context, msg: AppLocalizations.of(context)!.failedToImport);
             } finally {
+              importPasswordBytes?.fillRange(0, importPasswordBytes.length, 0);
               setState(() {
                 this._isBusy = false;
               });

@@ -25,7 +25,7 @@ int Function(Pointer<Uint8> passwd, int passwdLen, Pointer<
     Uint8> salt, int saltLen, int N, int r, int p, Pointer<
     Uint8> buf, int bufLen)? _nativeScrypt;
 
-Future<sig.Signature> createSignature(String password) async {
+Future<sig.Signature> createSignature(Uint8List password) async {
   final Uint8List salt = _generateRandomBytes(_scryptSaltLength);
   final Uint8List iv = _generateRandomBytes(_aesIvLength);
   final String plainText = _generateRandomString(_signatureLength);
@@ -50,7 +50,7 @@ Future<sig.Signature> createSignature(String password) async {
   );
 }
 
-Future<bool> verifySignature(sig.Signature? signature, String? password) async {
+Future<bool> verifySignature(sig.Signature? signature, Uint8List? password) async {
   if (signature == null || password == null) {
     return false;
   }
@@ -66,7 +66,7 @@ Future<bool> verifySignature(sig.Signature? signature, String? password) async {
 }
 
 Future<Note> createNote(int? id, int categoryId, String title, String plainText,
-    String password, [DateTime? lastUpdated]) async {
+    Uint8List password, [DateTime? lastUpdated]) async {
   final Uint8List salt = _generateRandomBytes(_scryptSaltLength);
   final Uint8List iv = _generateRandomBytes(_aesIvLength);
 
@@ -91,7 +91,7 @@ Future<Note> createNote(int? id, int categoryId, String title, String plainText,
   );
 }
 
-Future<String> getNotePlainBody(Note note, String password) async {
+Future<String> getNotePlainBody(Note note, Uint8List password) async {
   log.fine("Going to decrypt note body");
   Map data = Map();
   data['ciphertext'] = hexStringToBytes(note.body);
@@ -108,7 +108,7 @@ Future<String> getNotePlainBody(Note note, String password) async {
 
 Future<Uint8List> _encrypt(Map data) async {
   final String plainText = data['plainText'];
-  final String password = data['password'];
+  final Uint8List password = data['password'];
   final Uint8List salt = data['salt'];
   final Uint8List iv = data['iv'];
 
@@ -125,7 +125,7 @@ Future<Uint8List> _encrypt(Map data) async {
 
 Future<Uint8List> _decrypt(Map data) async {
   final Uint8List ciphertext = data['ciphertext'];
-  final String password = data['password'];
+  final Uint8List password = data['password'];
   final Uint8List salt = data['salt'];
   final Uint8List iv = data['iv'];
 
@@ -141,7 +141,7 @@ Future<Uint8List> _decrypt(Map data) async {
 Future<bool> _computeSignatureAndCompare(Map data) async {
   final String payload = data['payload'];
   final String plain = data['plain'];
-  final String password = data['password'];
+  final Uint8List password = data['password'];
   final Uint8List salt = data['salt'];
   final Uint8List iv = data['iv'];
 
@@ -180,7 +180,7 @@ String _generateRandomString(int length) {
 }
 
 Future<Uint8List> _hashPassword(
-    Uint8List salt, String password, int length) async {
+    Uint8List salt, Uint8List password, int length) async {
 
   Pointer<Uint8>? saltBuffer;
   Pointer<Uint8>? passwordBuffer;
@@ -202,13 +202,12 @@ Future<Uint8List> _hashPassword(
     saltBuffer.asTypedList(salt.length).setRange(0, salt.length, salt);
 
     // TODO minimize memory copy
-    List<int> passwordEncoded = utf8.encode(password);
-    passwordBuffer = calloc<Uint8>(passwordEncoded.length);
-    passwordBuffer.asTypedList(passwordEncoded.length).setRange(0, passwordEncoded.length, passwordEncoded);
+    passwordBuffer = calloc<Uint8>(password.length);
+    passwordBuffer.asTypedList(password.length).setRange(0, password.length, password);
 
     resultBuffer = calloc<Uint8>(length);
 
-    int errorCode = _nativeScrypt!(passwordBuffer, passwordEncoded.length, saltBuffer, salt.length, 16384, 8, 1, resultBuffer, length);
+    int errorCode = _nativeScrypt!(passwordBuffer, password.length, saltBuffer, salt.length, 16384, 8, 1, resultBuffer, length);
     if (errorCode == 0) {
       return Uint8List.fromList(resultBuffer.asTypedList(length));
     }
@@ -220,6 +219,7 @@ Future<Uint8List> _hashPassword(
       calloc.free(saltBuffer);
     }
     if (passwordBuffer != null) {
+      passwordBuffer.asTypedList(password.length).fillRange(0, password.length, 0);
       calloc.free(passwordBuffer);
     }
     if (resultBuffer != null) {
@@ -231,7 +231,7 @@ Future<Uint8List> _hashPassword(
   log.fine("Deriving key...");
   final kd = KeyDerivator('scrypt');
   kd.init(ScryptParameters(16384, 8, 1, length, salt));
-  final result = kd.process(utf8.encode(password) as Uint8List);
+  final result = kd.process(password);
   log.fine("Key derived");
   return result;
 }

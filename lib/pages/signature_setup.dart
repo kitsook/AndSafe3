@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:andsafe/l10n/app_localizations.dart';
 import 'package:andsafe/models/signature.dart';
@@ -123,15 +125,18 @@ class _SignatureInputState extends State<SignatureSetupPage> {
             setState(() {
               this._isBusy = true;
             });
+            Uint8List? passwordBytes;
             try {
+              passwordBytes = Uint8List.fromList(utf8.encode(_password1Controller.text));
               Signature signature =
-                  await createSignature(_password1Controller.text);
+                  await createSignature(passwordBytes);
               await db.adapter.generateSignature(signature);
 
               // signature set. proceed to load list
               Navigator.pushReplacementNamed(context, 'home',
-                  arguments: {'password': _password1Controller.text});
+                  arguments: {'password': passwordBytes});
             } catch (e) {
+              passwordBytes?.fillRange(0, passwordBytes!.length, 0);
               log.fine("Failed to save the signature");
               log.fine(e.toString());
               displaySnackBarMsg(context: context, msg: AppLocalizations.of(context)!.failedGeneratingEncryptionKey);

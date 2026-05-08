@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:andsafe/l10n/app_localizations.dart';
 import 'package:andsafe/models/note.dart';
@@ -152,9 +154,11 @@ class _ChangePasswordPageState extends State {
             setState(() {
               this._isBusy = true;
             });
+            Uint8List? currentPassword;
+            Uint8List? newPassword;
             try {
-              String currentPassword = _origPasswordController.text;
-              String newPassword = _newPassword1Controller.text;
+              currentPassword = Uint8List.fromList(utf8.encode(_origPasswordController.text));
+              newPassword = Uint8List.fromList(utf8.encode(_newPassword1Controller.text));
 
               Signature signature = await db.adapter.getSignature();
               final signatureCheck = await verifySignature(signature, currentPassword);
@@ -175,8 +179,8 @@ class _ChangePasswordPageState extends State {
                       note.id,
                       note.categoryId,
                       note.title,
-                      await getNotePlainBody(note, currentPassword),
-                      newPassword,
+                      await getNotePlainBody(note, currentPassword!),
+                      newPassword!,
                       note.lastUpdate);
                     await db.adapter.updateNote(newNote, txn);
                   }
@@ -192,6 +196,8 @@ class _ChangePasswordPageState extends State {
               log.fine(e.toString());
               displaySnackBarMsg(context: context, msg: AppLocalizations.of(context)!.failedToChangePassword);
             } finally {
+              currentPassword?.fillRange(0, currentPassword.length, 0);
+              newPassword?.fillRange(0, newPassword.length, 0);
               setState(() {
                 this._isBusy = false;
               });

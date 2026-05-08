@@ -28,6 +28,10 @@ For AndSafe v2, notes are export to the folder *AndroidSafeExports* under your i
 
 Note that for AndSafe3, if you uninstall the app, you will also delete all exported files.
 
+**Why I can export notes even when I didn't enter the correct password?**
+
+Notes should be protected by strong password and encryption algorithm, not by hiding them in the app database. 
+
 **I used previous version of AndSafe. Can I import my notes into AndSafe3?**
 
 AndSafe3 can import notes from AndSafe version 2 but not the other way around. Just export your notes in AndSafe, then open AndSafe3 and use the import function.

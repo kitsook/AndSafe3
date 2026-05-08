@@ -57,5 +57,6 @@
   "titleCannotBeEmpty": "Please enter some text for the title",
   "textToBeEncrypted": "Notes to be encrypted",
   "failedToSaveTheNote": "Failed to save the note",
-  "saveButton": "Save"
+  "saveButton": "Save",
+  "exitApp": "Exit"
 }

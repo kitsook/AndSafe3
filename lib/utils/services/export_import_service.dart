@@ -128,7 +128,7 @@ Future<String?> getNewExportFullFilePath() async {
     await Permission.storage.request();
   }
 
-  String? outputDir = await FilePicker.platform.getDirectoryPath();
+  String? outputDir = await FilePicker.getDirectoryPath();
   if (outputDir == null) {
     return null;
   }

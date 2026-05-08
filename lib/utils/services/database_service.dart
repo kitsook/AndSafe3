@@ -12,10 +12,13 @@ DatabaseAdapter adapter = DatabaseAdapter();
 const _currentDatabaseVersion = 2;
 
 class DatabaseAdapter {
-  late Future<Database> _database;
+  Future<Database>? _database;
 
-  DatabaseAdapter() : super() {
-    this._database = _init();
+  DatabaseAdapter() : super() {}
+
+  Future<Database> _getDatabase() {
+    _database ??= _init();
+    return _database!;
   }
 
   Future<Database> _init() async {
@@ -64,11 +67,11 @@ class DatabaseAdapter {
   }
 
   Future<Database> getDb() {
-    return this._database;
+    return _getDatabase();
   }
 
   Future<int> insertNote(Note note) async {
-    final Database db = await this._database;
+    final Database db = await _getDatabase();
     int id = await db.insert(
       'notes',
       note.toMap(),
@@ -83,7 +86,7 @@ class DatabaseAdapter {
 
   Future<void> updateNote(Note note, [Transaction? txn]) async {
     if (txn == null) {
-      final Database db = await this._database;
+      final Database db = await _getDatabase();
 
       await db.update(
         'notes',
@@ -114,7 +117,7 @@ class DatabaseAdapter {
   }
 
   Future<void> deleteNote(int id) async {
-    final Database db = await this._database;
+    final Database db = await _getDatabase();
     await db.delete(
       'notes',
       where: '_id=?',
@@ -128,7 +131,7 @@ class DatabaseAdapter {
   }
 
   Future<List<Note>> getNotes([ Set<int> ids = const <int>{} ]) async {
-    final Database db = await this._database;
+    final Database db = await _getDatabase();
     final String sortBy = await Prefs.getSortBy();
     final bool sortAscending = await Prefs.isSortAscending();
     List<Map> rows = await db.query(
@@ -151,7 +154,7 @@ class DatabaseAdapter {
   }
 
   Future<Note?> getNote(int id) async {
-    final Database db = await this._database;
+    final Database db = await _getDatabase();
     List<Map> rows = await db.query(
       'notes',
       where: '_id=?',
@@ -163,7 +166,7 @@ class DatabaseAdapter {
   }
 
   Future<bool> isPasswordSet() async {
-    final Database db = await this._database;
+    final Database db = await _getDatabase();
     List<Map> rows = await db.rawQuery('SELECT COUNT(1) AS num FROM signature');
     if (rows.length == 0) {
       return false;
@@ -173,7 +176,7 @@ class DatabaseAdapter {
 
   Future<void> generateSignature(Signature sig, [Transaction? txn]) async {
     if (txn == null) {
-      final Database db = await this._database;
+      final Database db = await _getDatabase();
 
       await db.delete(
         'signature',
@@ -196,7 +199,7 @@ class DatabaseAdapter {
   }
 
   Future<Signature> getSignature() async {
-    final Database db = await this._database;
+    final Database db = await _getDatabase();
     List<Map> rows = await db.query(
       'signature',
       limit: 1,
@@ -208,7 +211,7 @@ class DatabaseAdapter {
   }
 
   Future<Set<int>> searchNotes(String query) async {
-    final Database db = await this._database;
+    final Database db = await _getDatabase();
     List<Map> rows = await db.query(
       'searchable',
       columns: [

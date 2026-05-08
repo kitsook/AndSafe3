@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:andsafe/l10n/app_localizations.dart';
 import 'package:andsafe/utils/andsafe_crypto.dart';
 import 'package:andsafe/utils/logger.dart';
 import 'package:andsafe/utils/notification.dart';
@@ -7,7 +8,6 @@ import 'package:andsafe/utils/services/database_service.dart' as db;
 import 'package:andsafe/utils/services/export_import_service.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:loading_overlay/loading_overlay.dart';
 
 class ImportPage extends StatefulWidget {
@@ -155,7 +155,7 @@ class _ImportPageState extends State {
         ],
       ),
       onTap: () async {
-        FilePickerResult? result = await FilePicker.platform.pickFiles(
+        FilePickerResult? result = await FilePicker.pickFiles(
           type: FileType.custom,
           allowedExtensions: ['xml'],
         );
@@ -178,7 +178,7 @@ class _ImportPageState extends State {
             EdgeInsets.only(left: 15, bottom: 11, top: 11, right: 15),
         hintText: AppLocalizations.of(context)!.clickToChooseImportFile,
         errorStyle: TextStyle(
-          color: Theme.of(context).errorColor, // or any other color
+          color: Theme.of(context).highlightColor, // or any other color
         ),
       ),
       // The validator receives the text that the user has entered.

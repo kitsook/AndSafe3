@@ -1,3 +1,4 @@
+import 'package:andsafe/l10n/app_localizations.dart';
 import 'package:andsafe/models/note.dart';
 import 'package:andsafe/models/signature.dart';
 import 'package:andsafe/utils/andsafe_crypto.dart';
@@ -8,10 +9,10 @@ import 'package:andsafe/utils/services/database_service.dart' as db;
 import 'package:andsafe/utils/services/export_import_service.dart';
 import 'package:andsafe/utils/services/preferences_service.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:loading_overlay/loading_overlay.dart';
-import 'package:package_info/package_info.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class HomePage extends StatelessWidget {
@@ -84,7 +85,9 @@ class _NoteListState extends State<_NoteList> {
           ),
         ],
       ),
-      drawer: _buildMainDrawer(),
+      drawer: SafeArea(
+        child: _buildMainDrawer(),
+      ),
       body: LoadingOverlay(
           isLoading: this._isBusy,
           progressIndicator: _buildLoadingIndicator(),
@@ -171,26 +174,17 @@ class _NoteListState extends State<_NoteList> {
         child: TextField(
           autofocus: false,
           controller: _searchFieldController,
-          style: TextStyle(color: Theme.of(context).colorScheme.onBackground),
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
           decoration: InputDecoration(
             filled: true,
-            fillColor: Theme.of(context).colorScheme.background,
+            fillColor: Theme.of(context).colorScheme.surface,
             isDense: true,
             contentPadding: EdgeInsets.all(10),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(30.0)),
-              borderSide: BorderSide(
-                color: Theme.of(context).colorScheme.onPrimary,
-              ),
+            prefixIcon: Icon(Icons.search_rounded),
+            prefixIconConstraints: BoxConstraints(
+              minWidth: 20,
+              minHeight: 20,
             ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(30.0)),
-              borderSide: BorderSide(
-                color: Theme.of(context).colorScheme.onPrimary,
-              ),
-            ),
-            prefixIcon: Icon(Icons.search_rounded,
-                color: Theme.of(context).colorScheme.onPrimary),
             suffixIcon: IconButton(
               onPressed: () {
                 setState(() {
@@ -201,8 +195,6 @@ class _NoteListState extends State<_NoteList> {
               iconSize: 20.0,
             ),
             hintText: AppLocalizations.of(context)!.searchTitle,
-            hintStyle:
-                TextStyle(color: Theme.of(context).colorScheme.onPrimary),
           ),
           onChanged: (_) {
             setState(() {});
@@ -215,35 +207,36 @@ class _NoteListState extends State<_NoteList> {
       required IconData icon,
       required void Function()? onPressed}) {
     return IconButton(
-      icon: Stack(fit: StackFit.passthrough, children: <Widget>[
-        Positioned.fill(
-          child: Icon(icon),
-        ),
-        FutureBuilder(
-          future: Future.wait([Prefs.getSortBy(), Prefs.isSortAscending()]),
-          builder:
-              (BuildContext context, AsyncSnapshot<List<Object>> snapshot) {
-            if (snapshot.hasError || snapshot.data == null) {
-              return Container();
+      icon: FutureBuilder(
+        future: Future.wait([Prefs.getSortBy(), Prefs.isSortAscending()]),
+        builder: (BuildContext context, AsyncSnapshot<List<Object>> snapshot) {
+          bool isSelected = false;
+          bool isAscending = false;
+
+          if (snapshot.hasData && snapshot.data != null) {
+            isSelected = snapshot.data![0] == key;
+            if (isSelected) {
+              isAscending = snapshot.data![1] as bool;
             }
-            if (snapshot.data![0] == key) {
-              if (snapshot.data![1] as bool) {
-                return Align(
-                  alignment: Alignment.topRight,
-                  child: Icon(Icons.arrow_drop_up, size: 15),
-                );
-              } else {
-                return Align(
-                  alignment: Alignment.bottomRight,
-                  child: Icon(Icons.arrow_drop_down, size: 15),
-                );
-              }
-            } else {
-              return Container();
-            }
-          },
-        ),
-      ]),
+          }
+
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(icon),
+              SizedBox(
+                width: 18,
+                child: isSelected
+                    ? Icon(
+                        isAscending ? Icons.arrow_drop_up : Icons.arrow_drop_down,
+                        size: 18,
+                      )
+                    : null,
+              ),
+            ],
+          );
+        },
+      ),
       onPressed: onPressed,
     );
   }
@@ -362,6 +355,13 @@ class _NoteListState extends State<_NoteList> {
                     }
                   },
                   // don't disable even when correct password is not entered
+                ),
+                ListTile(
+                  leading: Icon(Icons.exit_to_app_rounded),
+                  title: Text(AppLocalizations.of(context)!.exitApp),
+                  onTap: () {
+                    SystemNavigator.pop();
+                  },
                 ),
               ],
             ),

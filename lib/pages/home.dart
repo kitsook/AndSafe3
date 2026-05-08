@@ -207,35 +207,36 @@ class _NoteListState extends State<_NoteList> {
       required IconData icon,
       required void Function()? onPressed}) {
     return IconButton(
-      icon: Stack(fit: StackFit.passthrough, children: <Widget>[
-        Positioned.fill(
-          child: Icon(icon),
-        ),
-        FutureBuilder(
-          future: Future.wait([Prefs.getSortBy(), Prefs.isSortAscending()]),
-          builder:
-              (BuildContext context, AsyncSnapshot<List<Object>> snapshot) {
-            if (snapshot.hasError || snapshot.data == null) {
-              return Container();
+      icon: FutureBuilder(
+        future: Future.wait([Prefs.getSortBy(), Prefs.isSortAscending()]),
+        builder: (BuildContext context, AsyncSnapshot<List<Object>> snapshot) {
+          bool isSelected = false;
+          bool isAscending = false;
+
+          if (snapshot.hasData && snapshot.data != null) {
+            isSelected = snapshot.data![0] == key;
+            if (isSelected) {
+              isAscending = snapshot.data![1] as bool;
             }
-            if (snapshot.data![0] == key) {
-              if (snapshot.data![1] as bool) {
-                return Align(
-                  alignment: Alignment.topRight,
-                  child: Icon(Icons.arrow_drop_up, size: 15),
-                );
-              } else {
-                return Align(
-                  alignment: Alignment.bottomRight,
-                  child: Icon(Icons.arrow_drop_down, size: 15),
-                );
-              }
-            } else {
-              return Container();
-            }
-          },
-        ),
-      ]),
+          }
+
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(icon),
+              SizedBox(
+                width: 18,
+                child: isSelected
+                    ? Icon(
+                        isAscending ? Icons.arrow_drop_up : Icons.arrow_drop_down,
+                        size: 18,
+                      )
+                    : null,
+              ),
+            ],
+          );
+        },
+      ),
       onPressed: onPressed,
     );
   }

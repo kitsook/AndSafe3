@@ -3,6 +3,7 @@ import 'package:andsafe/l10n/app_localizations.dart';
 import 'package:andsafe/utils/ThemeChanger.dart';
 import 'package:andsafe/utils/logger.dart';
 import 'package:andsafe/utils/services/preferences_service.dart';
+import 'package:andsafe/utils/services/database_service.dart' as db;
 import 'package:flag_secure/flag_secure.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -13,18 +14,23 @@ import 'package:provider/provider.dart';
 void main() async {
   setupLogger();
   WidgetsFlutterBinding.ensureInitialized();
+  AndSafeRouter.setupRouter();
+  
   String theme = await Prefs.getSelectedTheme();
   ThemeMode themeMode =
-    theme == PREF_THEME_LIGHT? ThemeMode.light :
+      theme == PREF_THEME_LIGHT? ThemeMode.light :
       theme == PREF_THEME_DARK? ThemeMode.dark : ThemeMode.system;
-  AndSafeRouter.setupRouter();
-  runApp(MyApp(themeMode));
+      
+  bool isPasswordSet = await db.adapter.isPasswordSet();
+  
+  runApp(MyApp(themeMode, isPasswordSet));
 }
 
 class MyApp extends StatelessWidget {
   final ThemeMode themeMode;
+  final bool isPasswordSet;
 
-  MyApp(this.themeMode);
+  MyApp(this.themeMode, this.isPasswordSet);
 
   Future<void> _setFlagSecure() async {
     try {
@@ -55,7 +61,7 @@ class MyApp extends StatelessWidget {
               colorSchemeSeed: Colors.teal,
             ),
             themeMode: themeChanger.themeMode,
-            initialRoute: 'signatureSetup',
+            initialRoute: isPasswordSet ? 'home' : 'signatureSetup',
             onGenerateRoute: AndSafeRouter.router.generator,
             supportedLocales: AppLocalizations.supportedLocales,
             localizationsDelegates: [

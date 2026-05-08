@@ -12,93 +12,11 @@ import 'package:loading_overlay/loading_overlay.dart';
 class SignatureSetupPage extends StatefulWidget {
   @override
   State<StatefulWidget> createState() {
-    return _CheckSignatureState();
-  }
-}
-
-class _CheckSignatureState extends State {
-  // a future to show the splash screen and check if password is set
-  final Future<bool> _splashScreenFuture =
-    Future.wait([
-      db.adapter.isPasswordSet(),
-      Future.delayed(Duration(milliseconds: 150), () { return true; })]
-    ).then((List<bool> result) { return Future.value(result.where((r) => r).length == result.length); });
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('AndSafe'),
-      ),
-      body: Container(
-        child: FutureBuilder<bool>(
-          future: _splashScreenFuture,
-          builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
-            if (snapshot.hasError) {
-              log.severe("Problem loading signature");
-              log.severe(snapshot.error.toString());
-              return Container(
-                  child: Center(child: Text(AppLocalizations.of(context)!.problemInitializing)));
-            }
-            if (snapshot.data != null) {
-              if (snapshot.data!) {
-                // signature already set. proceed to load list
-                log.fine("Signature already set. Proceed to home page");
-                Future.microtask(() => Navigator.pushReplacementNamed(context, 'home'));
-              } else {
-                return _SignatureInput();
-              }
-            }
-            return _buildSplashScreen();
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSplashScreen() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Image(
-                  image: AssetImage('assets/images/icons/safe.png'),
-                  width: 200,
-                  height: 200,
-                ),
-              ],
-            ),
-            SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                CircularProgressIndicator(),
-              ],
-            ),
-          ]
-        ),
-      ]
-    );
-  }
-}
-
-class _SignatureInput extends StatefulWidget {
-  @override
-  State<StatefulWidget> createState() {
     return _SignatureInputState();
   }
 }
 
-class _SignatureInputState extends State {
+class _SignatureInputState extends State<SignatureSetupPage> {
   final _formKey = GlobalKey<FormState>();
 
   final _password1Controller = TextEditingController();
@@ -116,28 +34,33 @@ class _SignatureInputState extends State {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        body: LoadingOverlay(
-            isLoading: this._isBusy,
-            child: Container(
-              padding: EdgeInsets.all(10.0),
-              child: Form(
-                key: _formKey,
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(AppLocalizations.of(context)!.setupPassword, style: TextStyle(fontWeight: FontWeight.bold)),
-                      _buildVerticalSpacing(),
-                      _buildPassword1Field(),
-                      _buildVerticalSpacing(),
-                      _buildPassword2Field(),
-                      _buildVerticalSpacing(),
-                      _buildActionButtons()
-                    ],
-                  ),
-                ),
+      appBar: AppBar(
+        title: Text('AndSafe'),
+      ),
+      body: LoadingOverlay(
+        isLoading: this._isBusy,
+        child: Container(
+          padding: EdgeInsets.all(10.0),
+          child: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(AppLocalizations.of(context)!.setupPassword, style: TextStyle(fontWeight: FontWeight.bold)),
+                  _buildVerticalSpacing(),
+                  _buildPassword1Field(),
+                  _buildVerticalSpacing(),
+                  _buildPassword2Field(),
+                  _buildVerticalSpacing(),
+                  _buildActionButtons()
+                ],
               ),
-            )));
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildVerticalSpacing() {
@@ -224,3 +147,4 @@ class _SignatureInputState extends State {
     );
   }
 }
+

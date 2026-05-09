@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:andsafe/l10n/app_localizations.dart';
 import 'package:andsafe/models/note.dart';
 import 'package:andsafe/models/signature.dart';
@@ -27,7 +28,7 @@ class HomePage extends StatelessWidget {
 }
 
 class _NoteList extends StatefulWidget {
-  final String? password;
+  final Uint8List? password;
 
   _NoteList({this.password});
 
@@ -38,14 +39,14 @@ class _NoteList extends StatefulWidget {
 }
 
 class _NoteListState extends State<_NoteList> {
-  String? _password;
+  Uint8List? _password;
   List<Note> _notes = [];
   bool _isBusy = false;
   final _searchFieldController = TextEditingController();
   final _notesScrollController = ScrollController();
   int? _scrollTo;
 
-  _NoteListState(String? password) {
+  _NoteListState(Uint8List? password) {
     this._password = password;
   }
 
@@ -299,6 +300,7 @@ class _NoteListState extends State<_NoteList> {
                         if (value != null && value as bool) {
                           displaySnackBarMsg(context: context, msg: AppLocalizations.of(context)!.passwordChanged);
                           setState(() {
+                            this._password?.fillRange(0, this._password!.length, 0);
                             this._password = null;
                             _displayPasswordInputDialog(context);
                           });
@@ -318,7 +320,8 @@ class _NoteListState extends State<_NoteList> {
                   subtitle: Text(AppLocalizations.of(context)!.importNotesHint),
                   onTap: () {
                     Navigator.of(context).pop();
-                    Navigator.pushNamed(context, 'import/$_password')
+                    Navigator.pushNamed(context, 'import',
+                      arguments: {'password': this._password})
                       .whenComplete(() {
                         setState(() {
                           // refresh the list
@@ -587,16 +590,20 @@ class _NoteListState extends State<_NoteList> {
         this._isBusy = true;
       });
 
+      Uint8List? passwordBytes;
       try {
         Signature signature = await db.adapter.getSignature();
-        final signatureCheck = await verifySignature(signature, enteredPassword!);
+        passwordBytes = Uint8List.fromList(utf8.encode(enteredPassword!));
+        final signatureCheck = await verifySignature(signature, passwordBytes);
         if (signatureCheck) {
-          this._password = enteredPassword;
+          this._password = passwordBytes;
           return;
         } else {
+          passwordBytes.fillRange(0, passwordBytes.length, 0);
           displaySnackBarMsg(context: context, msg: AppLocalizations.of(context)!.failedToVerifyPassword);
         }
       } catch (e) {
+        passwordBytes?.fillRange(0, passwordBytes.length, 0);
         log.severe("Failed to verify password");
         log.severe(e.toString());
         displaySnackBarMsg(context: context, msg: AppLocalizations.of(context)!.failedToVerifyPassword);

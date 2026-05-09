@@ -29,4 +29,4 @@ Handler changePasswordHandler = Handler(
 
 Handler importHandler = Handler(
     handlerFunc: (BuildContext? context, Map<String, dynamic> params) =>
-        ImportPage(params['password'][0]));
+        ImportPage());

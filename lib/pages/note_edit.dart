@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:andsafe/l10n/app_localizations.dart';
 import 'package:andsafe/models/note.dart';
 import 'package:andsafe/utils/andsafe_crypto.dart';
@@ -16,14 +18,14 @@ class NoteEditPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var arguments = ModalRoute.of(context)!.settings.arguments as Map;
-    String password = arguments['password']!;
+    Uint8List password = arguments['password']!;
     return _NoteEdit(int.tryParse(this.id), password);
   }
 }
 
 class _NoteEdit extends StatefulWidget {
   final int? id;
-  final String password;
+  final Uint8List password;
 
   _NoteEdit(this.id, this.password);
 
@@ -35,7 +37,7 @@ class _NoteEdit extends StatefulWidget {
 
 class _NoteEditState extends State<_NoteEdit> {
   final int? id;
-  final String password;
+  final Uint8List password;
   final _formKey = GlobalKey<FormState>();
 
   final titleFieldController = TextEditingController();

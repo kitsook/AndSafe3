@@ -320,7 +320,8 @@ class _NoteListState extends State<_NoteList> {
                   subtitle: Text(AppLocalizations.of(context)!.importNotesHint),
                   onTap: () {
                     Navigator.of(context).pop();
-                    Navigator.pushNamed(context, 'import/$_password')
+                    Navigator.pushNamed(context, 'import',
+                      arguments: {'password': this._password})
                       .whenComplete(() {
                         setState(() {
                           // refresh the list

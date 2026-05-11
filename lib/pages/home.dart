@@ -38,7 +38,7 @@ class _NoteList extends StatefulWidget {
   }
 }
 
-class _NoteListState extends State<_NoteList> {
+class _NoteListState extends State<_NoteList> with WidgetsBindingObserver {
   Uint8List? _password;
   List<Note> _notes = [];
   bool _isBusy = false;
@@ -53,10 +53,29 @@ class _NoteListState extends State<_NoteList> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance!.addObserver(this);
     if (this._password == null) {
       WidgetsBinding.instance!.addPostFrameCallback((_) {
         _displayPasswordInputDialog(context);
       });
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance!.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.detached) {
+      if (this._password != null) {
+        this._password!.fillRange(0, this._password!.length, 0);
+        setState(() {
+          this._password = null;
+        });
+      }
     }
   }
 

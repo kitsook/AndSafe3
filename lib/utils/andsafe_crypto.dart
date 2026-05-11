@@ -120,7 +120,13 @@ Future<Uint8List> _encrypt(Map data) async {
   log.fine("Going to init cipher");
   cipher.init(true, params);
   log.fine("Going to do actual encryption");
-  return cipher.process(utf8.encode(plainText) as Uint8List);
+  final result = cipher.process(utf8.encode(plainText) as Uint8List);
+  
+  // Zero out the isolate's copy of password and key
+  password.fillRange(0, password.length, 0);
+  key.fillRange(0, key.length, 0);
+  
+  return result;
 }
 
 Future<Uint8List> _decrypt(Map data) async {
@@ -135,7 +141,13 @@ Future<Uint8List> _decrypt(Map data) async {
       ParametersWithIV<KeyParameter>(KeyParameter(key), iv), null);
   final cipher = PaddedBlockCipher('AES/CBC/PKCS7');
   cipher.init(false, params);
-  return cipher.process(ciphertext);
+  final result = cipher.process(ciphertext);
+  
+  // Zero out the isolate's copy of password and key
+  password.fillRange(0, password.length, 0);
+  key.fillRange(0, key.length, 0);
+  
+  return result;
 }
 
 Future<bool> _computeSignatureAndCompare(Map data) async {
@@ -162,6 +174,7 @@ Future<bool> _computeSignatureAndCompare(Map data) async {
   } catch (e) {
     log.severe('Failed to verify password');
   }
+  
   return false;
 }
 
@@ -232,6 +245,7 @@ Future<Uint8List> _hashPassword(
   final kd = KeyDerivator('scrypt');
   kd.init(ScryptParameters(16384, 8, 1, length, salt));
   final result = kd.process(password);
+  password.fillRange(0, password.length, 0);
   log.fine("Key derived");
   return result;
 }

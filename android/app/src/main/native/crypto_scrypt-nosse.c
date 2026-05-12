@@ -317,20 +317,26 @@ crypto_scrypt(const uint8_t * passwd, size_t passwdlen,
 
 	/* Free memory. */
 #ifdef MAP_ANON
+	memset(V0, 0, 128 * r * N);
 	if (munmap(V0, 128 * r * N))
 		goto err2;
 #else
+	memset(V0, 0, 128 * r * N);
 	free(V0);
 #endif
+	memset(XY0, 0, 256 * r + 64);
 	free(XY0);
+	memset(B0, 0, 128 * r * p);
 	free(B0);
 
 	/* Success! */
 	return (0);
 
 err2:
+	memset(XY0, 0, 256 * r + 64);
 	free(XY0);
 err1:
+	memset(B0, 0, 128 * r * p);
 	free(B0);
 err0:
 	/* Failure! */

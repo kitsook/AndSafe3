@@ -80,52 +80,60 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               body: Row(
                 children: [
                   Expanded(
-                    flex: 3,
-                    child: NoteList(
-                      password: _password,
-                      refreshCounter: _refreshCounter,
-                      drawer: SafeArea(child: _buildMainDrawer()),
-                      onPasswordRequested: () => _displayPasswordInputDialog(context),
-                      onRefreshRequested: () => setState(() => _refreshCounter++),
-                      onNoteSelected: (id) => setState(() {
-                        _selectedNoteId = id;
-                        _isCreatingNewNote = false;
-                      }),
-                      onNewNoteRequested: () => setState(() {
-                        _selectedNoteId = null;
-                        _isCreatingNewNote = true;
-                      }),
+                    flex: 4,
+                    child: MediaQuery.removePadding(
+                      context: context,
+                      removeRight: true,
+                      child: NoteList(
+                        password: _password,
+                        refreshCounter: _refreshCounter,
+                        drawer: SafeArea(child: _buildMainDrawer()),
+                        onPasswordRequested: () => _displayPasswordInputDialog(context),
+                        onRefreshRequested: () => setState(() => _refreshCounter++),
+                        onNoteSelected: (id) => setState(() {
+                          _selectedNoteId = id;
+                          _isCreatingNewNote = false;
+                        }),
+                        onNewNoteRequested: () => setState(() {
+                          _selectedNoteId = null;
+                          _isCreatingNewNote = true;
+                        }),
+                      ),
                     ),
                   ),
                   Expanded(
-                    flex: 7,
-                    child: _password == null || (_selectedNoteId == null && !_isCreatingNewNote)
-                        ? Container(color: Theme.of(context).colorScheme.surface)
-                        : NoteEdit(
-                            key: ValueKey<int?>(_selectedNoteId),
-                            id: _selectedNoteId,
-                            password: _password!,
-                            onNoteSaved: (id) {
-                              setState(() {
-                                _selectedNoteId = id;
-                                _isCreatingNewNote = false;
-                                _refreshCounter++;
-                              });
-                            },
-                            onNoteDeleted: (id) {
-                              setState(() {
-                                _selectedNoteId = null;
-                                _isCreatingNewNote = false;
-                                _refreshCounter++;
-                              });
-                            },
-                            onNoteCancelled: () {
-                              setState(() {
-                                _selectedNoteId = null;
-                                _isCreatingNewNote = false;
-                              });
-                            },
-                          ),
+                    flex: 6,
+                    child: MediaQuery.removePadding(
+                      context: context,
+                      removeLeft: true,
+                      child: _password == null || (_selectedNoteId == null && !_isCreatingNewNote)
+                          ? Container(color: Theme.of(context).colorScheme.surface)
+                          : NoteEdit(
+                              key: ValueKey<int?>(_selectedNoteId),
+                              id: _selectedNoteId,
+                              password: _password!,
+                              onNoteSaved: (id) {
+                                setState(() {
+                                  _selectedNoteId = id;
+                                  _isCreatingNewNote = false;
+                                  _refreshCounter++;
+                                });
+                              },
+                              onNoteDeleted: (id) {
+                                setState(() {
+                                  _selectedNoteId = null;
+                                  _isCreatingNewNote = false;
+                                  _refreshCounter++;
+                                });
+                              },
+                              onNoteCancelled: () {
+                                setState(() {
+                                  _selectedNoteId = null;
+                                  _isCreatingNewNote = false;
+                                });
+                              },
+                            ),
+                    ),
                   ),
                 ],
               ),
@@ -453,6 +461,7 @@ class NoteListState extends State<NoteList> {
     return Scaffold(
       appBar: AppBar(
         title: Text('AndSafe'),
+        centerTitle: false,
         actions: <Widget>[
           _buildSortByIconButton(
             key: PREF_SORT_KEY_TITLE,
@@ -479,7 +488,7 @@ class NoteListState extends State<NoteList> {
         ),
       ),
       drawer: widget.drawer,
-      body: Container(
+      body: SizedBox.expand(
         child: FutureBuilder(
           future: Future.wait([_reloadNotes(), Prefs.getSwipeToDelete()]),
           builder: (BuildContext context, AsyncSnapshot<List<Object>> snapshot) {
@@ -554,6 +563,7 @@ class NoteListState extends State<NoteList> {
 
   Widget _buildSearchField(context) {
     return Container(
+      width: double.infinity,
       margin: const EdgeInsets.only(left: 10.0, right: 10.0, bottom: 10.0),
       child: TextField(
         autofocus: false,
@@ -629,6 +639,7 @@ class NoteListState extends State<NoteList> {
     final List<Note> notes = _notes;
 
     return Scrollbar(
+      controller: _notesScrollController,
       child: ListView.builder(
         itemCount: notes.length,
         controller: _notesScrollController,

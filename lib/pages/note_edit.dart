@@ -12,14 +12,16 @@ import 'package:loading_overlay/loading_overlay.dart';
 
 class NoteEditPage extends StatelessWidget {
   final String id;
+  final Key? noteEditKey;
 
-  NoteEditPage(this.id);
+  NoteEditPage(this.id, {this.noteEditKey});
 
   @override
   Widget build(BuildContext context) {
     var arguments = ModalRoute.of(context)!.settings.arguments as Map;
     Uint8List password = arguments['password']!;
     return NoteEdit(
+      key: noteEditKey,
       id: int.tryParse(this.id),
       password: password,
     );
@@ -56,6 +58,14 @@ class NoteEditState extends State<NoteEdit> {
   void initState() {
     super.initState();
     this._loadNoteFuture = _loadTheNote();
+  }
+
+  @override
+  void didUpdateWidget(NoteEdit oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.id != oldWidget.id) {
+      this._loadNoteFuture = _loadTheNote();
+    }
   }
 
   @override

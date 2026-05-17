@@ -31,6 +31,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   bool _isCreatingNewNote = false;
   int _refreshCounter = 0;
   bool _isBusy = false;
+  bool _hasNavigatedToEdit = false;
+
+  final GlobalKey<NoteEditState> _noteEditKey = GlobalKey<NoteEditState>();
+  final GlobalKey<NoteListState> _noteListKey = GlobalKey<NoteListState>();
+  Route? _editRoute;
 
   @override
   void initState() {
@@ -74,6 +79,20 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             MediaQuery.of(context).orientation == Orientation.landscape;
 
         if (isTabletLandscape) {
+          if (_hasNavigatedToEdit) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted && _hasNavigatedToEdit) {
+                if (_editRoute != null) {
+                  Navigator.removeRoute(context, _editRoute!);
+                  _editRoute = null;
+                }
+                setState(() {
+                  _hasNavigatedToEdit = false;
+                });
+              }
+            });
+          }
+
           return LoadingOverlay(
             isLoading: _isBusy,
             child: Scaffold(
@@ -85,6 +104,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       context: context,
                       removeRight: true,
                       child: NoteList(
+                        key: _noteListKey,
                         password: _password,
                         refreshCounter: _refreshCounter,
                         drawer: SafeArea(child: _buildMainDrawer()),
@@ -109,7 +129,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       child: _password == null || (_selectedNoteId == null && !_isCreatingNewNote)
                           ? Container(color: Theme.of(context).colorScheme.surface)
                           : NoteEdit(
-                              key: ValueKey<int?>(_selectedNoteId),
+                              key: _noteEditKey,
                               id: _selectedNoteId,
                               password: _password!,
                               onNoteSaved: (id) {
@@ -120,6 +140,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                 });
                               },
                               onNoteDeleted: (id) {
+                                if (id != null) {
+                                  _noteListKey.currentState?.doDeleteNote(id);
+                                }
                                 setState(() {
                                   _selectedNoteId = null;
                                   _isCreatingNewNote = false;
@@ -140,16 +163,71 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             ),
           );
         } else {
+          if (_password != null &&
+              (_selectedNoteId != null || _isCreatingNewNote) &&
+              !_hasNavigatedToEdit) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted && !_hasNavigatedToEdit &&
+                  MediaQuery.of(context).orientation == Orientation.portrait) {
+                setState(() {
+                  _hasNavigatedToEdit = true;
+                });
+                _editRoute = MaterialPageRoute(
+                  builder: (context) => NoteEditPage(
+                    _isCreatingNewNote ? 'new' : _selectedNoteId.toString(),
+                    noteEditKey: _noteEditKey,
+                  ),
+                  settings: RouteSettings(arguments: {'password': _password}),
+                );
+                Navigator.of(context).push(_editRoute!).then((value) {
+                  if (value == 'doDelete' && _selectedNoteId != null) {
+                    _noteListKey.currentState?.doDeleteNote(_selectedNoteId!);
+                  }
+                  if (mounted) {
+                    setState(() {
+                      _hasNavigatedToEdit = false;
+                      _selectedNoteId = null;
+                      _isCreatingNewNote = false;
+                    });
+                  }
+                });
+              }
+            });
+          }
+          
+          Widget offstageNoteEdit = Offstage(
+            offstage: true,
+            child: _password == null || (_selectedNoteId == null && !_isCreatingNewNote)
+                ? Container()
+                : NoteEdit(
+                    key: _noteEditKey,
+                    id: _selectedNoteId,
+                    password: _password!,
+                  ),
+          );
+
           return LoadingOverlay(
             isLoading: _isBusy,
-            child: NoteList(
-              password: _password,
-              refreshCounter: _refreshCounter,
-              drawer: SafeArea(child: _buildMainDrawer()),
-              onPasswordRequested: () => _displayPasswordInputDialog(context),
-              onRefreshRequested: () => setState(() => _refreshCounter++),
-              onNoteSelected: null,
-              onNewNoteRequested: null,
+            child: Stack(
+              children: [
+                NoteList(
+                  key: _noteListKey,
+                  password: _password,
+                  refreshCounter: _refreshCounter,
+                  drawer: SafeArea(child: _buildMainDrawer()),
+                  onPasswordRequested: () => _displayPasswordInputDialog(context),
+                  onRefreshRequested: () => setState(() => _refreshCounter++),
+                  onNoteSelected: (id) => setState(() {
+                    _selectedNoteId = id;
+                    _isCreatingNewNote = false;
+                  }),
+                  onNewNoteRequested: () => setState(() {
+                    _selectedNoteId = null;
+                    _isCreatingNewNote = true;
+                  }),
+                ),
+                if (!_hasNavigatedToEdit) offstageNoteEdit,
+              ],
             ),
           );
         }
@@ -427,6 +505,7 @@ class NoteList extends StatefulWidget {
   final int refreshCounter;
 
   NoteList({
+    Key? key,
     this.password,
     this.drawer,
     this.onNoteSelected,
@@ -434,7 +513,7 @@ class NoteList extends StatefulWidget {
     this.onPasswordRequested,
     this.onRefreshRequested,
     this.refreshCounter = 0,
-  });
+  }) : super(key: key);
 
   @override
   NoteListState createState() => NoteListState();
@@ -660,7 +739,7 @@ class NoteListState extends State<NoteList> {
                   } else {
                     Navigator.pushNamed(context, 'note/$id', arguments: {'password': widget.password}).then((value) {
                       if (value == 'doDelete') {
-                        return _doDeleteNote(id!);
+                        return doDeleteNote(id!);
                       }
                     }).whenComplete(() {
                       if (widget.onRefreshRequested != null) {
@@ -714,13 +793,13 @@ class NoteListState extends State<NoteList> {
       key: UniqueKey(),
       onDismissed: (_) async {
         _notes = _notes.where((n) => n.id != noteId).toList();
-        await _doDeleteNote(noteId);
+        await doDeleteNote(noteId);
       },
       child: child,
     );
   }
 
-  Future<void> _doDeleteNote(int noteId) async {
+  Future<void> doDeleteNote(int noteId) async {
     Note? justDeleted = await db.adapter.getNote(noteId);
 
     SnackBarAction undoAction = SnackBarAction(

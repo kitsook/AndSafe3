@@ -11,7 +11,6 @@ const String _PREF_KEY_SORT_ASCENDING = 'SelectedSortAscending';
 const String _PREF_KEY_THEME = 'SelectedTheme';
 const String _PREF_KEY_SWIPE_TO_DELETE = 'SwipeToDelete';
 
-
 _PreferenceService _prefService = _PreferenceService();
 
 class Prefs {
@@ -42,7 +41,9 @@ class Prefs {
 
   static Future<String> getSelectedTheme() async {
     String theTheme = await _prefService.getString(_PREF_KEY_THEME);
-    if (theTheme == PREF_THEME_SYSTEM || theTheme == PREF_THEME_LIGHT || theTheme == PREF_THEME_DARK) {
+    if (theTheme == PREF_THEME_SYSTEM ||
+        theTheme == PREF_THEME_LIGHT ||
+        theTheme == PREF_THEME_DARK) {
       return theTheme;
     } else {
       return PREF_THEME_SYSTEM;
@@ -50,7 +51,9 @@ class Prefs {
   }
 
   static Future<void> setSelectedTheme(String theTheme) async {
-    if (theTheme == PREF_THEME_SYSTEM || theTheme == PREF_THEME_LIGHT || theTheme == PREF_THEME_DARK) {
+    if (theTheme == PREF_THEME_SYSTEM ||
+        theTheme == PREF_THEME_LIGHT ||
+        theTheme == PREF_THEME_DARK) {
       await _prefService.setString(_PREF_KEY_THEME, theTheme);
     } else {
       await _prefService.setString(_PREF_KEY_THEME, PREF_THEME_SYSTEM);
@@ -66,7 +69,6 @@ class Prefs {
   }
 }
 
-
 class _PreferenceService {
   Future<SharedPreferences>? _prefs;
 
@@ -74,7 +76,7 @@ class _PreferenceService {
     _prefs = _init();
   }
 
-  Future<SharedPreferences> _init () async {
+  Future<SharedPreferences> _init() async {
     return SharedPreferences.getInstance();
   }
 
@@ -131,5 +133,4 @@ class _PreferenceService {
       // ignore
     }
   }
-
 }

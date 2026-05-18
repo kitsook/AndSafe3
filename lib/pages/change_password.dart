@@ -14,7 +14,6 @@ import 'package:loading_overlay/loading_overlay.dart';
 import 'package:sqflite/sqflite.dart';
 
 class ChangePasswordPage extends StatefulWidget {
-
   @override
   State<StatefulWidget> createState() {
     return _ChangePasswordPageState();
@@ -29,7 +28,8 @@ class _ChangePasswordPageState extends State {
   bool _isBusy = false;
 
   StreamController<int> _progressStreamController = StreamController<int>();
-  late Stream<int> _progressStream = _progressStreamController.stream.asBroadcastStream();
+  late Stream<int> _progressStream =
+      _progressStreamController.stream.asBroadcastStream();
 
   int _totalToReEncrypt = 0;
   int _currentlyReEncrypting = 0;
@@ -87,7 +87,7 @@ class _ChangePasswordPageState extends State {
       controller: _origPasswordController,
       decoration: new InputDecoration(
           contentPadding:
-          EdgeInsets.only(left: 15, bottom: 11, top: 11, right: 15),
+              EdgeInsets.only(left: 15, bottom: 11, top: 11, right: 15),
           hintText: AppLocalizations.of(context)!.currentPassword),
       // The validator receives the text that the user has entered.
       validator: (value) {
@@ -108,7 +108,7 @@ class _ChangePasswordPageState extends State {
       controller: _newPassword1Controller,
       decoration: new InputDecoration(
           contentPadding:
-          EdgeInsets.only(left: 15, bottom: 11, top: 11, right: 15),
+              EdgeInsets.only(left: 15, bottom: 11, top: 11, right: 15),
           hintText: AppLocalizations.of(context)!.newPassword),
       // The validator receives the text that the user has entered.
       validator: (value) {
@@ -129,11 +129,13 @@ class _ChangePasswordPageState extends State {
       controller: _newPassword2Controller,
       decoration: new InputDecoration(
           contentPadding:
-          EdgeInsets.only(left: 15, bottom: 11, top: 11, right: 15),
+              EdgeInsets.only(left: 15, bottom: 11, top: 11, right: 15),
           hintText: AppLocalizations.of(context)!.newPassword2),
       // The validator receives the text that the user has entered.
       validator: (value) {
-        if (value == null || value.isEmpty || value != _newPassword1Controller.text) {
+        if (value == null ||
+            value.isEmpty ||
+            value != _newPassword1Controller.text) {
           return AppLocalizations.of(context)!.newPasswordsDoNotMatch;
         }
         return null;
@@ -157,11 +159,14 @@ class _ChangePasswordPageState extends State {
             Uint8List? currentPassword;
             Uint8List? newPassword;
             try {
-              currentPassword = Uint8List.fromList(utf8.encode(_origPasswordController.text));
-              newPassword = Uint8List.fromList(utf8.encode(_newPassword1Controller.text));
+              currentPassword =
+                  Uint8List.fromList(utf8.encode(_origPasswordController.text));
+              newPassword =
+                  Uint8List.fromList(utf8.encode(_newPassword1Controller.text));
 
               Signature signature = await db.adapter.getSignature();
-              final signatureCheck = await verifySignature(signature, currentPassword);
+              final signatureCheck =
+                  await verifySignature(signature, currentPassword);
               if (signatureCheck) {
                 List<Note> allNotes = await db.adapter.getNotes();
                 this._totalToReEncrypt = allNotes.length;
@@ -174,14 +179,15 @@ class _ChangePasswordPageState extends State {
                 await database.transaction((txn) async {
                   await db.adapter.generateSignature(newSignature, txn);
                   for (var note in allNotes) {
-                    _progressStreamController.add(++this._currentlyReEncrypting);
+                    _progressStreamController
+                        .add(++this._currentlyReEncrypting);
                     Note newNote = await createNote(
-                      note.id,
-                      note.categoryId,
-                      note.title,
-                      await getNotePlainBody(note, currentPassword!),
-                      newPassword!,
-                      note.lastUpdate);
+                        note.id,
+                        note.categoryId,
+                        note.title,
+                        await getNotePlainBody(note, currentPassword!),
+                        newPassword!,
+                        note.lastUpdate);
                     await db.adapter.updateNote(newNote, txn);
                   }
                 });
@@ -189,12 +195,16 @@ class _ChangePasswordPageState extends State {
                 Navigator.pop(context, true);
               } else {
                 // current password verification failed
-                displaySnackBarMsg(context: context, msg: AppLocalizations.of(context)!.failedToChangePassword);
+                displaySnackBarMsg(
+                    context: context,
+                    msg: AppLocalizations.of(context)!.failedToChangePassword);
               }
             } catch (e) {
               log.fine("Failed to change password");
               log.fine(e.toString());
-              displaySnackBarMsg(context: context, msg: AppLocalizations.of(context)!.failedToChangePassword);
+              displaySnackBarMsg(
+                  context: context,
+                  msg: AppLocalizations.of(context)!.failedToChangePassword);
             } finally {
               currentPassword?.fillRange(0, currentPassword.length, 0);
               newPassword?.fillRange(0, newPassword.length, 0);
@@ -231,7 +241,8 @@ class _ChangePasswordPageState extends State {
               children = <Widget>[
                 CircularProgressIndicator(),
                 SizedBox(height: 10),
-                Text(AppLocalizations.of(context)!.reEncrypting + ' (${snapshot.data} / $_totalToReEncrypt)'),
+                Text(AppLocalizations.of(context)!.reEncrypting +
+                    ' (${snapshot.data} / $_totalToReEncrypt)'),
               ];
             } else {
               children = <Widget>[
@@ -243,8 +254,7 @@ class _ChangePasswordPageState extends State {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: children,
             );
-          }
-      ),
+          }),
     );
   }
 }

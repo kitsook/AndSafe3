@@ -6,8 +6,6 @@ import 'package:andsafe/utils/services/preferences_service.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
-
-
 DatabaseAdapter adapter = DatabaseAdapter();
 const _currentDatabaseVersion = 2;
 
@@ -34,8 +32,8 @@ class DatabaseAdapter {
             'create table signature (_id integer primary key autoincrement, plain text, payload text, ' +
                 'salt blob, iv blob, ver integer);');
 
-        await db.execute('create virtual table searchable ' +
-            'using fts3 (title)');
+        await db
+            .execute('create virtual table searchable ' + 'using fts3 (title)');
         // TODO the original plan was to create an index with upper(title)...
         // but it is not supported by older version of android. so for now,
         // we sort the list after retrieving the notes from db
@@ -47,19 +45,20 @@ class DatabaseAdapter {
         if (oldVersion == 1) {
           // add virtual table for search function
           await db.transaction((txn) async {
-            await txn.execute('create virtual table searchable ' +
-                'using fts3 (title)');
-            await txn.rawQuery('insert into searchable (docid, title) select _id, title from notes;');
+            await txn.execute(
+                'create virtual table searchable ' + 'using fts3 (title)');
+            await txn.rawQuery(
+                'insert into searchable (docid, title) select _id, title from notes;');
           });
         }
 
         // update signature. use KCV concept and only store part of the encrypted payload
         await db.transaction((txn) async {
-          await txn.rawQuery('update signature set payload = substr(payload, 1, '
-          + (signatureKeyCheckValueLengthInByte * 2).toString() + ');');
-          await txn.update(
-              'signature',
-              {'ver': currentSignatureVer});
+          await txn.rawQuery(
+              'update signature set payload = substr(payload, 1, ' +
+                  (signatureKeyCheckValueLengthInByte * 2).toString() +
+                  ');');
+          await txn.update('signature', {'ver': currentSignatureVer});
         });
       },
       version: _currentDatabaseVersion,
@@ -77,10 +76,7 @@ class DatabaseAdapter {
       note.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
-    await db.insert(
-      'searchable',
-      {'docid': id, 'title': note.title}
-    );
+    await db.insert('searchable', {'docid': id, 'title': note.title});
     return id;
   }
 
@@ -130,7 +126,7 @@ class DatabaseAdapter {
     );
   }
 
-  Future<List<Note>> getNotes([ Set<int> ids = const <int>{} ]) async {
+  Future<List<Note>> getNotes([Set<int> ids = const <int>{}]) async {
     final Database db = await _getDatabase();
     final String sortBy = await Prefs.getSortBy();
     final bool sortAscending = await Prefs.isSortAscending();
@@ -141,14 +137,15 @@ class DatabaseAdapter {
     );
     // TODO sort and filter with sql query instead of doing it after retrieving all notes
     final List<Note> notes = rows
-      .where((row) => ids.isEmpty || ids.contains(row['_id']))
-      .map((row) => Note.fromMap(row as Map<String, dynamic>))
-      .toList();
+        .where((row) => ids.isEmpty || ids.contains(row['_id']))
+        .map((row) => Note.fromMap(row as Map<String, dynamic>))
+        .toList();
     notes.sort((a, b) {
       if (sortBy == PREF_SORT_KEY_TITLE) {
-        return a.title.toUpperCase().compareTo(b.title.toUpperCase()) * (sortAscending? 1 : -1);
+        return a.title.toUpperCase().compareTo(b.title.toUpperCase()) *
+            (sortAscending ? 1 : -1);
       }
-      return a.lastUpdate.compareTo(b.lastUpdate) * (sortAscending? 1 : -1);
+      return a.lastUpdate.compareTo(b.lastUpdate) * (sortAscending ? 1 : -1);
     });
     return notes;
   }
@@ -226,6 +223,4 @@ class DatabaseAdapter {
       return row['docid'] as int;
     }).toSet();
   }
-
-
 }

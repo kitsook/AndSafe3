@@ -49,7 +49,8 @@ class _SignatureInputState extends State<SignatureSetupPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text(AppLocalizations.of(context)!.setupPassword, style: TextStyle(fontWeight: FontWeight.bold)),
+                  Text(AppLocalizations.of(context)!.setupPassword,
+                      style: TextStyle(fontWeight: FontWeight.bold)),
                   _buildVerticalSpacing(),
                   _buildPassword1Field(),
                   _buildVerticalSpacing(),
@@ -102,7 +103,9 @@ class _SignatureInputState extends State<SignatureSetupPage> {
           hintText: AppLocalizations.of(context)!.enterSamePasswordAgain),
       // The validator receives the text that the user has entered.
       validator: (value) {
-        if (value == null || value.isEmpty || value != _password1Controller.text) {
+        if (value == null ||
+            value.isEmpty ||
+            value != _password1Controller.text) {
           return AppLocalizations.of(context)!.twoPasswordsDoNotMatch;
         }
         return null;
@@ -120,16 +123,18 @@ class _SignatureInputState extends State<SignatureSetupPage> {
         onPressed: () async {
           // validate form fields
           if (_formKey.currentState!.validate()) {
-            displaySnackBarMsg(context: context, msg: AppLocalizations.of(context)!.generatingEncryptionKey);
+            displaySnackBarMsg(
+                context: context,
+                msg: AppLocalizations.of(context)!.generatingEncryptionKey);
 
             setState(() {
               this._isBusy = true;
             });
             Uint8List? passwordBytes;
             try {
-              passwordBytes = Uint8List.fromList(utf8.encode(_password1Controller.text));
-              Signature signature =
-                  await createSignature(passwordBytes);
+              passwordBytes =
+                  Uint8List.fromList(utf8.encode(_password1Controller.text));
+              Signature signature = await createSignature(passwordBytes);
               await db.adapter.generateSignature(signature);
 
               // signature set. proceed to load list
@@ -139,7 +144,10 @@ class _SignatureInputState extends State<SignatureSetupPage> {
               passwordBytes?.fillRange(0, passwordBytes!.length, 0);
               log.fine("Failed to save the signature");
               log.fine(e.toString());
-              displaySnackBarMsg(context: context, msg: AppLocalizations.of(context)!.failedGeneratingEncryptionKey);
+              displaySnackBarMsg(
+                  context: context,
+                  msg: AppLocalizations.of(context)!
+                      .failedGeneratingEncryptionKey);
             } finally {
               setState(() {
                 this._isBusy = false;
@@ -152,4 +160,3 @@ class _SignatureInputState extends State<SignatureSetupPage> {
     );
   }
 }
-

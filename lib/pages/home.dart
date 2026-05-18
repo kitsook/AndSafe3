@@ -71,7 +71,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    bool isEditing = _password != null && (_selectedNoteId != null || _isCreatingNewNote);
+    bool isEditing =
+        _password != null && (_selectedNoteId != null || _isCreatingNewNote);
 
     return PopScope(
       canPop: !isEditing,
@@ -107,8 +108,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                           password: _password,
                           refreshCounter: _refreshCounter,
                           drawer: SafeArea(child: _buildMainDrawer()),
-                          onPasswordRequested: () => _displayPasswordInputDialog(context),
-                          onRefreshRequested: () => setState(() => _refreshCounter++),
+                          onPasswordRequested: () =>
+                              _displayPasswordInputDialog(context),
+                          onRefreshRequested: () =>
+                              setState(() => _refreshCounter++),
                           onNoteSelected: (id) => setState(() {
                             _selectedNoteId = id;
                             _isCreatingNewNote = false;
@@ -125,8 +128,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       child: MediaQuery.removePadding(
                         context: context,
                         removeLeft: true,
-                        child: (_password == null || (_selectedNoteId == null && !_isCreatingNewNote))
-                            ? Container(color: Theme.of(context).colorScheme.surface)
+                        child: (_password == null ||
+                                (_selectedNoteId == null &&
+                                    !_isCreatingNewNote))
+                            ? Container(
+                                color: Theme.of(context).colorScheme.surface)
                             : _buildNoteEdit(),
                       ),
                     ),
@@ -144,7 +150,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     password: _password,
                     refreshCounter: _refreshCounter,
                     drawer: SafeArea(child: _buildMainDrawer()),
-                    onPasswordRequested: () => _displayPasswordInputDialog(context),
+                    onPasswordRequested: () =>
+                        _displayPasswordInputDialog(context),
                     onRefreshRequested: () => setState(() => _refreshCounter++),
                     onNoteSelected: (id) => setState(() {
                       _selectedNoteId = id;
@@ -211,7 +218,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             content: TextField(
               controller: _controller,
               decoration: InputDecoration(
-                hintText: AppLocalizations.of(context)!.passwordToDecryptYourNotes,
+                hintText:
+                    AppLocalizations.of(context)!.passwordToDecryptYourNotes,
                 suffixIcon: IconButton(
                   icon: Icon(Icons.arrow_right_alt_rounded),
                   onPressed: () {
@@ -255,13 +263,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           return;
         } else {
           passwordBytes.fillRange(0, passwordBytes.length, 0);
-          displaySnackBarMsg(context: context, msg: AppLocalizations.of(context)!.failedToVerifyPassword);
+          displaySnackBarMsg(
+              context: context,
+              msg: AppLocalizations.of(context)!.failedToVerifyPassword);
         }
       } catch (e) {
         passwordBytes?.fillRange(0, passwordBytes.length, 0);
         log.severe("Failed to verify password");
         log.severe(e.toString());
-        displaySnackBarMsg(context: context, msg: AppLocalizations.of(context)!.failedToVerifyPassword);
+        displaySnackBarMsg(
+            context: context,
+            msg: AppLocalizations.of(context)!.failedToVerifyPassword);
       } finally {
         setState(() {
           this._isBusy = false;
@@ -309,89 +321,118 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 padding: EdgeInsets.zero,
                 children: [
                   ListTile(
-                  leading: Icon(Icons.settings_rounded),
-                  title: Text(AppLocalizations.of(context)!.settings),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    Navigator.pushNamed(context, 'settings/change').whenComplete(() {
-                      setState(() {
-                        _refreshCounter++;
-                      });
-                    });
-                  },
-                  enabled: this._password != null,
-                ),
-                ListTile(
-                  leading: Icon(Icons.cached_rounded),
-                  title: Text(AppLocalizations.of(context)!.changePassword),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    Navigator.pushNamed(context, 'password/change').then((value) {
-                      if (value != null && value as bool) {
-                        displaySnackBarMsg(context: context, msg: AppLocalizations.of(context)!.passwordChanged);
+                    leading: Icon(Icons.settings_rounded),
+                    title: Text(AppLocalizations.of(context)!.settings),
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      Navigator.pushNamed(context, 'settings/change')
+                          .whenComplete(() {
                         setState(() {
-                          this._password?.fillRange(0, this._password!.length, 0);
-                          this._password = null;
                           _refreshCounter++;
                         });
-                        _displayPasswordInputDialog(context);
-                      } else {
-                        displaySnackBarMsg(context: context, msg: AppLocalizations.of(context)!.passwordNotChanged);
-                      }
-                    }).onError((error, stackTrace) {
-                      displaySnackBarMsg(context: context, msg: AppLocalizations.of(context)!.passwordNotChanged);
-                    });
-                  },
-                  enabled: this._password != null,
-                ),
-                ListTile(
-                  leading: Icon(Icons.read_more_rounded),
-                  title: Text(AppLocalizations.of(context)!.importNotes),
-                  subtitle: Text(AppLocalizations.of(context)!.importNotesHint),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    Navigator.pushNamed(context, 'import', arguments: {'password': this._password}).whenComplete(() {
-                      setState(() {
-                        _refreshCounter++;
                       });
-                    });
-                  },
-                  enabled: this._password != null,
-                ),
-                ListTile(
-                  leading: Icon(Icons.save_rounded),
-                  title: Text(AppLocalizations.of(context)!.exportNotes),
-                  subtitle: Text(AppLocalizations.of(context)!.exportNotesHint),
-                  onTap: () async {
-                    Navigator.of(context).pop();
-                    try {
-                      String? exportFileName = await getNewExportFullFilePath();
-                      log.fine('Target export file: $exportFileName');
-                      if (exportFileName == null) {
-                        log.severe('Failed to generate an export file name');
-                        displaySnackBarMsg(context: context, msg: AppLocalizations.of(context)!.failedToExport);
-                        return;
-                      }
+                    },
+                    enabled: this._password != null,
+                  ),
+                  ListTile(
+                    leading: Icon(Icons.cached_rounded),
+                    title: Text(AppLocalizations.of(context)!.changePassword),
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      Navigator.pushNamed(context, 'password/change')
+                          .then((value) {
+                        if (value != null && value as bool) {
+                          displaySnackBarMsg(
+                              context: context,
+                              msg: AppLocalizations.of(context)!
+                                  .passwordChanged);
+                          setState(() {
+                            this
+                                ._password
+                                ?.fillRange(0, this._password!.length, 0);
+                            this._password = null;
+                            _refreshCounter++;
+                          });
+                          _displayPasswordInputDialog(context);
+                        } else {
+                          displaySnackBarMsg(
+                              context: context,
+                              msg: AppLocalizations.of(context)!
+                                  .passwordNotChanged);
+                        }
+                      }).onError((error, stackTrace) {
+                        displaySnackBarMsg(
+                            context: context,
+                            msg: AppLocalizations.of(context)!
+                                .passwordNotChanged);
+                      });
+                    },
+                    enabled: this._password != null,
+                  ),
+                  ListTile(
+                    leading: Icon(Icons.read_more_rounded),
+                    title: Text(AppLocalizations.of(context)!.importNotes),
+                    subtitle:
+                        Text(AppLocalizations.of(context)!.importNotesHint),
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      Navigator.pushNamed(context, 'import',
+                              arguments: {'password': this._password})
+                          .whenComplete(() {
+                        setState(() {
+                          _refreshCounter++;
+                        });
+                      });
+                    },
+                    enabled: this._password != null,
+                  ),
+                  ListTile(
+                    leading: Icon(Icons.save_rounded),
+                    title: Text(AppLocalizations.of(context)!.exportNotes),
+                    subtitle:
+                        Text(AppLocalizations.of(context)!.exportNotesHint),
+                    onTap: () async {
+                      Navigator.of(context).pop();
+                      try {
+                        String? exportFileName =
+                            await getNewExportFullFilePath();
+                        log.fine('Target export file: $exportFileName');
+                        if (exportFileName == null) {
+                          log.severe('Failed to generate an export file name');
+                          displaySnackBarMsg(
+                              context: context,
+                              msg:
+                                  AppLocalizations.of(context)!.failedToExport);
+                          return;
+                        }
 
-                      await exportNotes(exportFileName, await db.adapter.getSignature(), await db.adapter.getNotes());
-                      displaySnackBarMsg(context: context, msg: AppLocalizations.of(context)!.exportedToFile + exportFileName);
-                    } catch (e) {
-                      log.severe('Failed to export notes');
-                      log.severe(e);
-                      displaySnackBarMsg(context: context, msg: AppLocalizations.of(context)!.failedToExport);
-                    }
-                  },
-                ),
-                ListTile(
-                  leading: Icon(Icons.exit_to_app_rounded),
-                  title: Text(AppLocalizations.of(context)!.exitApp),
-                  onTap: () {
-                    SystemNavigator.pop();
-                  },
-                ),
-              ],
+                        await exportNotes(
+                            exportFileName,
+                            await db.adapter.getSignature(),
+                            await db.adapter.getNotes());
+                        displaySnackBarMsg(
+                            context: context,
+                            msg: AppLocalizations.of(context)!.exportedToFile +
+                                exportFileName);
+                      } catch (e) {
+                        log.severe('Failed to export notes');
+                        log.severe(e);
+                        displaySnackBarMsg(
+                            context: context,
+                            msg: AppLocalizations.of(context)!.failedToExport);
+                      }
+                    },
+                  ),
+                  ListTile(
+                    leading: Icon(Icons.exit_to_app_rounded),
+                    title: Text(AppLocalizations.of(context)!.exitApp),
+                    onTap: () {
+                      SystemNavigator.pop();
+                    },
+                  ),
+                ],
+              ),
             ),
-          ),
           ),
           Divider(),
           Container(
@@ -435,7 +476,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             margin: const EdgeInsets.all(5.0),
             child: Text(
               '$appName $version build $buildNumber',
-              style: DefaultTextStyle.of(context).style.apply(fontSizeFactor: 0.8),
+              style:
+                  DefaultTextStyle.of(context).style.apply(fontSizeFactor: 0.8),
             ),
           );
         }
@@ -531,26 +573,34 @@ class NoteListState extends State<NoteList> {
       body: SizedBox.expand(
         child: FutureBuilder(
           future: Future.wait([_reloadNotes(), Prefs.getSwipeToDelete()]),
-          builder: (BuildContext context, AsyncSnapshot<List<Object>> snapshot) {
+          builder:
+              (BuildContext context, AsyncSnapshot<List<Object>> snapshot) {
             if (snapshot.hasError) {
               log.severe("Problem loading notes");
               log.severe(snapshot.error.toString());
-              return Container(child: Center(child: Text(AppLocalizations.of(context)!.problemLoadingNotes)));
+              return Container(
+                  child: Center(
+                      child: Text(
+                          AppLocalizations.of(context)!.problemLoadingNotes)));
             }
 
-            if (snapshot.hasData && snapshot.connectionState == ConnectionState.done) {
+            if (snapshot.hasData &&
+                snapshot.connectionState == ConnectionState.done) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (_notesScrollController.hasClients && _scrollTo != null) {
-                  final int pos = _notes.takeWhile((note) => note.id != _scrollTo).length;
+                  final int pos =
+                      _notes.takeWhile((note) => note.id != _scrollTo).length;
                   _notesScrollController.animateTo(pos * 80,
-                      duration: Duration(milliseconds: 500), curve: Curves.ease);
+                      duration: Duration(milliseconds: 500),
+                      curve: Curves.ease);
                   _scrollTo = null;
                 }
               });
             }
 
             if (snapshot.data == null) {
-              return Container(child: Center(child: CircularProgressIndicator()));
+              return Container(
+                  child: Center(child: CircularProgressIndicator()));
             } else {
               return _buildNoteList(snapshot.data![1] as bool);
             }
@@ -565,7 +615,8 @@ class NoteListState extends State<NoteList> {
             if (widget.onNewNoteRequested != null) {
               widget.onNewNoteRequested!();
             } else {
-              Navigator.pushNamed(context, 'note/new', arguments: {'password': widget.password}).then((value) {
+              Navigator.pushNamed(context, 'note/new',
+                  arguments: {'password': widget.password}).then((value) {
                 if (value is int) {
                   _scrollTo = value;
                 }
@@ -592,7 +643,8 @@ class NoteListState extends State<NoteList> {
       _notes = await db.adapter.getNotes();
       return _notes.length;
     }
-    Set<int> ids = await db.adapter.searchNotes(_searchFieldController.text + '*');
+    Set<int> ids =
+        await db.adapter.searchNotes(_searchFieldController.text + '*');
     if (ids.isEmpty) {
       _notes = <Note>[];
       return 0;
@@ -638,7 +690,9 @@ class NoteListState extends State<NoteList> {
   }
 
   IconButton _buildSortByIconButton(
-      {required String key, required IconData icon, required void Function()? onPressed}) {
+      {required String key,
+      required IconData icon,
+      required void Function()? onPressed}) {
     return IconButton(
       icon: FutureBuilder(
         future: Future.wait([Prefs.getSortBy(), Prefs.isSortAscending()]),
@@ -661,7 +715,9 @@ class NoteListState extends State<NoteList> {
                 width: 18,
                 child: isSelected
                     ? Icon(
-                        isAscending ? Icons.arrow_drop_up : Icons.arrow_drop_down,
+                        isAscending
+                            ? Icons.arrow_drop_up
+                            : Icons.arrow_drop_down,
                         size: 18,
                       )
                     : null,
@@ -698,7 +754,8 @@ class NoteListState extends State<NoteList> {
                   if (widget.onNoteSelected != null) {
                     widget.onNoteSelected!(id!);
                   } else {
-                    Navigator.pushNamed(context, 'note/$id', arguments: {'password': widget.password}).then((value) {
+                    Navigator.pushNamed(context, 'note/$id',
+                        arguments: {'password': widget.password}).then((value) {
                       if (value == 'doDelete') {
                         return doDeleteNote(id!);
                       }

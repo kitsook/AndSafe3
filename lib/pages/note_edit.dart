@@ -35,7 +35,14 @@ class NoteEdit extends StatefulWidget {
   final ValueChanged<int?>? onNoteDeleted;
   final VoidCallback? onNoteCancelled;
 
-  NoteEdit({Key? key, this.id, required this.password, this.onNoteSaved, this.onNoteDeleted, this.onNoteCancelled}) : super(key: key);
+  NoteEdit(
+      {Key? key,
+      this.id,
+      required this.password,
+      this.onNoteSaved,
+      this.onNoteDeleted,
+      this.onNoteCancelled})
+      : super(key: key);
 
   @override
   State<StatefulWidget> createState() {
@@ -80,7 +87,8 @@ class NoteEditState extends State<NoteEdit> {
       Note? note = await db.adapter.getNote(widget.id!);
       if (note != null) {
         titleFieldController.text = note.title;
-        bodyFieldController.text = await getNotePlainBody(note, widget.password);
+        bodyFieldController.text =
+            await getNotePlainBody(note, widget.password);
         _selectedCategory = note.categoryId;
         return true;
       }
@@ -92,9 +100,9 @@ class NoteEditState extends State<NoteEdit> {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          title: Text(widget.id == null ?
-            AppLocalizations.of(context)!.createNoteTitle :
-            AppLocalizations.of(context)!.editNoteTitle),
+          title: Text(widget.id == null
+              ? AppLocalizations.of(context)!.createNoteTitle
+              : AppLocalizations.of(context)!.editNoteTitle),
           actions: _buildTitleActionButtons(widget.id),
         ),
         body: LoadingOverlay(
@@ -107,12 +115,15 @@ class NoteEditState extends State<NoteEdit> {
                   log.severe("Problem loading the note ${widget.id}");
                   log.severe(snapshot.error.toString());
                   return Container(
-                      child: Center(child: Text(AppLocalizations.of(context)!.errorLoadingNote)));
+                      child: Center(
+                          child: Text(
+                              AppLocalizations.of(context)!.errorLoadingNote)));
                 }
                 if (snapshot.data == null) {
                   return Container(
                       child: Center(child: CircularProgressIndicator()));
-                } else if (snapshot.data! || (!snapshot.data! && widget.id == null)) {
+                } else if (snapshot.data! ||
+                    (!snapshot.data! && widget.id == null)) {
                   return Form(
                     key: _formKey,
                     child: SingleChildScrollView(
@@ -132,7 +143,9 @@ class NoteEditState extends State<NoteEdit> {
                 // Normally shouldn't reach here
                 log.severe("Problem loading the note ${widget.id}");
                 return Container(
-                    child: Center(child: Text(AppLocalizations.of(context)!.errorLoadingNote)));
+                    child: Center(
+                        child: Text(
+                            AppLocalizations.of(context)!.errorLoadingNote)));
               },
             ),
           ),
@@ -173,7 +186,9 @@ class NoteEditState extends State<NoteEdit> {
             } catch (e) {
               log.severe("Failed to save the note");
               log.severe(e.toString());
-              displaySnackBarMsg(context: context, msg: AppLocalizations.of(context)!.failedToSaveTheNote);
+              displaySnackBarMsg(
+                  context: context,
+                  msg: AppLocalizations.of(context)!.failedToSaveTheNote);
             } finally {
               if (mounted) {
                 setState(() {
@@ -228,7 +243,7 @@ class NoteEditState extends State<NoteEdit> {
             controller: titleFieldController,
             decoration: new InputDecoration(
                 contentPadding:
-                EdgeInsets.only(left: 15, bottom: 11, top: 11, right: 15),
+                    EdgeInsets.only(left: 15, bottom: 11, top: 11, right: 15),
                 hintText: AppLocalizations.of(context)!.titleHint),
             // The validator receives the text that the user has entered.
             validator: (value) {
@@ -244,7 +259,8 @@ class NoteEditState extends State<NoteEdit> {
             alignedDropdown: true,
             child: DropdownButton<int>(
               value: _selectedCategory,
-              items: List<int>.generate(noteCategories.values.length, (i) => i).map((int value) {
+              items: List<int>.generate(noteCategories.values.length, (i) => i)
+                  .map((int value) {
                 return new DropdownMenuItem<int>(
                   value: value,
                   child: getIconByCategory(value),
@@ -275,5 +291,4 @@ class NoteEditState extends State<NoteEdit> {
           hintText: AppLocalizations.of(context)!.textToBeEncrypted),
     );
   }
-
- }
+}

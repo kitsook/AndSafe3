@@ -41,8 +41,10 @@ class _ImportPageState extends State<_ImportPageInternal> {
   final _fileNameController = TextEditingController();
   bool _isBusy = false;
 
-  StreamController<int> _importProgressStreamController = StreamController<int>();
-  late Stream<int> _importProgressStream = _importProgressStreamController.stream.asBroadcastStream();
+  StreamController<int> _importProgressStreamController =
+      StreamController<int>();
+  late Stream<int> _importProgressStream =
+      _importProgressStreamController.stream.asBroadcastStream();
 
   int _totalToImport = 0;
   int _currentlyImporting = 0;
@@ -95,39 +97,39 @@ class _ImportPageState extends State<_ImportPageInternal> {
   Widget _buildImportProgressIndicator() {
     return Container(
       child: StreamBuilder(
-        stream: _importProgressStream,
-        initialData: 0,
-        builder: (BuildContext context, AsyncSnapshot<int> snapshot) {
-          List<Widget> children;
-          if (snapshot.hasError) {
-            children = <Widget>[
-              CircularProgressIndicator(),
-            ];
-          } else if (snapshot.connectionState == ConnectionState.waiting) {
-            children = <Widget>[
-              CircularProgressIndicator(),
-              SizedBox(height: 10),
-              Text(AppLocalizations.of(context)!.verifying),
-            ];
-          } else if (snapshot.connectionState == ConnectionState.active &&
-              _totalToImport > 0) {
-            children = <Widget>[
-              CircularProgressIndicator(),
-              SizedBox(height: 10),
-              Text(AppLocalizations.of(context)!.importing + ' (${snapshot.data} / $_totalToImport)'),
-            ];
-          } else {
-            children = <Widget>[
-              CircularProgressIndicator(),
-            ];
-          }
-          return Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: children,
-          );
-        }
-      ),
+          stream: _importProgressStream,
+          initialData: 0,
+          builder: (BuildContext context, AsyncSnapshot<int> snapshot) {
+            List<Widget> children;
+            if (snapshot.hasError) {
+              children = <Widget>[
+                CircularProgressIndicator(),
+              ];
+            } else if (snapshot.connectionState == ConnectionState.waiting) {
+              children = <Widget>[
+                CircularProgressIndicator(),
+                SizedBox(height: 10),
+                Text(AppLocalizations.of(context)!.verifying),
+              ];
+            } else if (snapshot.connectionState == ConnectionState.active &&
+                _totalToImport > 0) {
+              children = <Widget>[
+                CircularProgressIndicator(),
+                SizedBox(height: 10),
+                Text(AppLocalizations.of(context)!.importing +
+                    ' (${snapshot.data} / $_totalToImport)'),
+              ];
+            } else {
+              children = <Widget>[
+                CircularProgressIndicator(),
+              ];
+            }
+            return Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: children,
+            );
+          }),
     );
   }
 
@@ -144,7 +146,8 @@ class _ImportPageState extends State<_ImportPageInternal> {
       decoration: new InputDecoration(
           contentPadding:
               EdgeInsets.only(left: 15, bottom: 11, top: 11, right: 15),
-          hintText: AppLocalizations.of(context)!.passwordToDecryptImportedNotes),
+          hintText:
+              AppLocalizations.of(context)!.passwordToDecryptImportedNotes),
       // The validator receives the text that the user has entered.
       validator: (value) {
         if (value == null || value.isEmpty) {
@@ -171,8 +174,7 @@ class _ImportPageState extends State<_ImportPageInternal> {
           type: FileType.custom,
           allowedExtensions: ['xml'],
         );
-        if (result != null &&
-            result.files.single.path != null) {
+        if (result != null && result.files.single.path != null) {
           _importFullPath = result.files.single.path;
           _fileNameController.text = result.files.single.name;
         }
@@ -219,13 +221,16 @@ class _ImportPageState extends State<_ImportPageInternal> {
             try {
               log.fine('Importing from ${_importFullPath!}');
               final imported = parseNotesFromFile(_importFullPath!);
-              importPasswordBytes = Uint8List.fromList(utf8.encode(_passwordController.text));
+              importPasswordBytes =
+                  Uint8List.fromList(utf8.encode(_passwordController.text));
 
-              final verifyResult = await verifySignature(
-                  imported.item1, importPasswordBytes);
+              final verifyResult =
+                  await verifySignature(imported.item1, importPasswordBytes);
               log.fine("Verify import password result: $verifyResult");
               if (!verifyResult) {
-                displaySnackBarMsg(context: context, msg: AppLocalizations.of(context)!.incorrectImportPassword);
+                displaySnackBarMsg(
+                    context: context,
+                    msg: AppLocalizations.of(context)!.incorrectImportPassword);
               } else {
                 _totalToImport = imported.item2.length;
                 _currentlyImporting = 0;
@@ -257,7 +262,9 @@ class _ImportPageState extends State<_ImportPageInternal> {
             } catch (e) {
               log.fine("Failed to import notes");
               log.fine(e.toString());
-              displaySnackBarMsg(context: context, msg: AppLocalizations.of(context)!.failedToImport);
+              displaySnackBarMsg(
+                  context: context,
+                  msg: AppLocalizations.of(context)!.failedToImport);
             } finally {
               importPasswordBytes?.fillRange(0, importPasswordBytes.length, 0);
               setState(() {

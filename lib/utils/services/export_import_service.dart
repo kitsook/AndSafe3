@@ -1,4 +1,3 @@
-
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -24,7 +23,9 @@ Tuple2<Signature, List<Note>> parseNotesFromFile(String theFileName) {
   // parse signature
   final XmlElement? signatureRow = document
       .findAllElements('table')
-      .where((node) => node.getAttribute('name') == 'signature').first.getElement('row');
+      .where((node) => node.getAttribute('name') == 'signature')
+      .first
+      .getElement('row');
   if (signatureRow == null) {
     log.severe("Cannot find signature in import file");
     throw FormatException("Cannot find signature in import file");
@@ -35,7 +36,9 @@ Tuple2<Signature, List<Note>> parseNotesFromFile(String theFileName) {
   // parse notes
   final Iterable<XmlElement> noteRows = document
       .findAllElements('table')
-      .where((node) => node.getAttribute('name') == 'notes').first.findElements('row');
+      .where((node) => node.getAttribute('name') == 'notes')
+      .first
+      .findElements('row');
   for (var row in noteRows) {
     Note parsedNote = _parseNoteRow(row);
     importedNotes.add(parsedNote);
@@ -44,7 +47,8 @@ Tuple2<Signature, List<Note>> parseNotesFromFile(String theFileName) {
   return Tuple2(importedSignature, importedNotes);
 }
 
-Future<void> exportNotes(String fullFilePath, Signature signature, List<Note> notes) async {
+Future<void> exportNotes(
+    String fullFilePath, Signature signature, List<Note> notes) async {
   final builder = XmlBuilder();
   final DateFormat formatter = DateFormat('yyyy-MM-dd HH:mm:ss');
 
@@ -119,7 +123,9 @@ Future<void> exportNotes(String fullFilePath, Signature signature, List<Note> no
   });
   final bookshelfXml = builder.buildDocument();
   final outputFile = File(fullFilePath);
-  await outputFile.writeAsString(bookshelfXml.toXmlString(pretty: true, indent: '    '), flush: true);
+  await outputFile.writeAsString(
+      bookshelfXml.toXmlString(pretty: true, indent: '    '),
+      flush: true);
 }
 
 Future<String?> getNewExportFullFilePath() async {
@@ -135,7 +141,7 @@ Future<String?> getNewExportFullFilePath() async {
 
   for (var i = 0; i < 5; i++) {
     String fullFilPath = p.join(outputDir, _newExportFileName());
-    if (! await File(fullFilPath).exists()) {
+    if (!await File(fullFilPath).exists()) {
       return fullFilPath;
     }
     await Future.delayed(const Duration(seconds: 1), () => '');
@@ -151,23 +157,75 @@ String _newExportFileName() {
 
 Signature _parseSignatureRow(XmlElement row) {
   return Signature(
-    int.parse(row.findElements('col').where((node) => node.getAttribute('name') == '_id').first.text),
-    row.findElements('col').where((node) => node.getAttribute('name') == 'plain').first.text,
-    row.findElements('col').where((node) => node.getAttribute('name') == 'payload').first.text,
-    hex.decode(row.findElements('col').where((node) => node.getAttribute('name') == 'salt').first.text) as Uint8List,
-    hex.decode(row.findElements('col').where((node) => node.getAttribute('name') == 'iv').first.text) as Uint8List,
-    int.parse(row.findElements('col').where((node) => node.getAttribute('name') == 'ver').first.text),
+    int.parse(row
+        .findElements('col')
+        .where((node) => node.getAttribute('name') == '_id')
+        .first
+        .text),
+    row
+        .findElements('col')
+        .where((node) => node.getAttribute('name') == 'plain')
+        .first
+        .text,
+    row
+        .findElements('col')
+        .where((node) => node.getAttribute('name') == 'payload')
+        .first
+        .text,
+    hex.decode(row
+        .findElements('col')
+        .where((node) => node.getAttribute('name') == 'salt')
+        .first
+        .text) as Uint8List,
+    hex.decode(row
+        .findElements('col')
+        .where((node) => node.getAttribute('name') == 'iv')
+        .first
+        .text) as Uint8List,
+    int.parse(row
+        .findElements('col')
+        .where((node) => node.getAttribute('name') == 'ver')
+        .first
+        .text),
   );
 }
 
 Note _parseNoteRow(XmlElement row) {
   return Note(
-    int.parse(row.findElements('col').where((node) => node.getAttribute('name') == '_id').first.text),
-    int.parse(row.findElements('col').where((node) => node.getAttribute('name') == 'cat_id').first.text),
-    row.findElements('col').where((node) => node.getAttribute('name') == 'title').first.text,
-    row.findElements('col').where((node) => node.getAttribute('name') == 'body').first.text,
-    hex.decode(row.findElements('col').where((node) => node.getAttribute('name') == 'salt').first.text) as Uint8List,
-    hex.decode(row.findElements('col').where((node) => node.getAttribute('name') == 'iv').first.text) as Uint8List,
-    DateTime.parse(row.findElements('col').where((node) => node.getAttribute('name') == 'last_update').first.text),
+    int.parse(row
+        .findElements('col')
+        .where((node) => node.getAttribute('name') == '_id')
+        .first
+        .text),
+    int.parse(row
+        .findElements('col')
+        .where((node) => node.getAttribute('name') == 'cat_id')
+        .first
+        .text),
+    row
+        .findElements('col')
+        .where((node) => node.getAttribute('name') == 'title')
+        .first
+        .text,
+    row
+        .findElements('col')
+        .where((node) => node.getAttribute('name') == 'body')
+        .first
+        .text,
+    hex.decode(row
+        .findElements('col')
+        .where((node) => node.getAttribute('name') == 'salt')
+        .first
+        .text) as Uint8List,
+    hex.decode(row
+        .findElements('col')
+        .where((node) => node.getAttribute('name') == 'iv')
+        .first
+        .text) as Uint8List,
+    DateTime.parse(row
+        .findElements('col')
+        .where((node) => node.getAttribute('name') == 'last_update')
+        .first
+        .text),
   );
 }

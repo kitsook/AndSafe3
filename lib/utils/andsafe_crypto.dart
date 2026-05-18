@@ -14,16 +14,22 @@ import 'package:flutter/foundation.dart';
 import 'package:pointycastle/api.dart';
 import 'package:pointycastle/key_derivators/api.dart';
 
-
 const _scryptSaltLength = 32;
 const _aesIvLength = 16;
 const _aesKeyLength = 32;
 const _signatureLength = 32;
 
 //function to native scrypt
-int Function(Pointer<Uint8> passwd, int passwdLen, Pointer<
-    Uint8> salt, int saltLen, int N, int r, int p, Pointer<
-    Uint8> buf, int bufLen)? _nativeScrypt;
+int Function(
+    Pointer<Uint8> passwd,
+    int passwdLen,
+    Pointer<Uint8> salt,
+    int saltLen,
+    int N,
+    int r,
+    int p,
+    Pointer<Uint8> buf,
+    int bufLen)? _nativeScrypt;
 
 Future<sig.Signature> createSignature(Uint8List password) async {
   final Uint8List salt = _generateRandomBytes(_scryptSaltLength);
@@ -43,14 +49,17 @@ Future<sig.Signature> createSignature(Uint8List password) async {
   return sig.Signature(
     null,
     plainText,
-    signature.substring(0, signatureKeyCheckValueLengthInByte * 2).toUpperCase(),
+    signature
+        .substring(0, signatureKeyCheckValueLengthInByte * 2)
+        .toUpperCase(),
     salt,
     iv,
     currentSignatureVer,
   );
 }
 
-Future<bool> verifySignature(sig.Signature? signature, Uint8List? password) async {
+Future<bool> verifySignature(
+    sig.Signature? signature, Uint8List? password) async {
   if (signature == null || password == null) {
     return false;
   }
@@ -65,8 +74,9 @@ Future<bool> verifySignature(sig.Signature? signature, Uint8List? password) asyn
   return await _computeSignatureAndCompare(data);
 }
 
-Future<Note> createNote(int? id, int categoryId, String title, String plainText,
-    Uint8List password, [DateTime? lastUpdated]) async {
+Future<Note> createNote(
+    int? id, int categoryId, String title, String plainText, Uint8List password,
+    [DateTime? lastUpdated]) async {
   final Uint8List salt = _generateRandomBytes(_scryptSaltLength);
   final Uint8List iv = _generateRandomBytes(_aesIvLength);
 
@@ -87,7 +97,7 @@ Future<Note> createNote(int? id, int categoryId, String title, String plainText,
     ciphertext.toUpperCase(),
     salt,
     iv,
-    lastUpdated == null? DateTime.now() : lastUpdated,
+    lastUpdated == null ? DateTime.now() : lastUpdated,
   );
 }
 
@@ -121,11 +131,11 @@ Future<Uint8List> _encrypt(Map data) async {
   cipher.init(true, params);
   log.fine("Going to do actual encryption");
   final result = cipher.process(utf8.encode(plainText) as Uint8List);
-  
+
   // Zero out the isolate's copy of password and key
   password.fillRange(0, password.length, 0);
   key.fillRange(0, key.length, 0);
-  
+
   return result;
 }
 
@@ -142,11 +152,11 @@ Future<Uint8List> _decrypt(Map data) async {
   final cipher = PaddedBlockCipher('AES/CBC/PKCS7');
   cipher.init(false, params);
   final result = cipher.process(ciphertext);
-  
+
   // Zero out the isolate's copy of password and key
   password.fillRange(0, password.length, 0);
   key.fillRange(0, key.length, 0);
-  
+
   return result;
 }
 
@@ -168,13 +178,14 @@ Future<bool> _computeSignatureAndCompare(Map data) async {
     data['salt'] = salt;
     data['iv'] = iv;
     final String signature =
-      bytesToHexString(await compute(_encrypt, data, debugLabel: "encrypt"));
+        bytesToHexString(await compute(_encrypt, data, debugLabel: "encrypt"));
 
-    return payload.toUpperCase() == signature.toUpperCase().substring(0, payload.length);
+    return payload.toUpperCase() ==
+        signature.toUpperCase().substring(0, payload.length);
   } catch (e) {
     log.severe('Failed to verify password');
   }
-  
+
   return false;
 }
 
@@ -194,7 +205,6 @@ String _generateRandomString(int length) {
 
 Future<Uint8List> _hashPassword(
     Uint8List salt, Uint8List password, int length) async {
-
   Pointer<Uint8>? saltBuffer;
   Pointer<Uint8>? passwordBuffer;
   Pointer<Uint8>? resultBuffer;
@@ -204,9 +214,18 @@ Future<Uint8List> _hashPassword(
           ? DynamicLibrary.open("libcrypto_scrypt.so")
           : DynamicLibrary.process();
       _nativeScrypt = nativeScryptLib
-          .lookup<NativeFunction<Int32 Function(Pointer<Uint8>, IntPtr, Pointer<
-          Uint8>, IntPtr, Uint64, Uint32, Uint32, Pointer<Uint8>, IntPtr)>>(
-          "crypto_scrypt")
+          .lookup<
+              NativeFunction<
+                  Int32 Function(
+                      Pointer<Uint8>,
+                      IntPtr,
+                      Pointer<Uint8>,
+                      IntPtr,
+                      Uint64,
+                      Uint32,
+                      Uint32,
+                      Pointer<Uint8>,
+                      IntPtr)>>("crypto_scrypt")
           .asFunction();
     }
 
@@ -216,11 +235,14 @@ Future<Uint8List> _hashPassword(
 
     // TODO minimize memory copy
     passwordBuffer = calloc<Uint8>(password.length);
-    passwordBuffer.asTypedList(password.length).setRange(0, password.length, password);
+    passwordBuffer
+        .asTypedList(password.length)
+        .setRange(0, password.length, password);
 
     resultBuffer = calloc<Uint8>(length);
 
-    int errorCode = _nativeScrypt!(passwordBuffer, password.length, saltBuffer, salt.length, 16384, 8, 1, resultBuffer, length);
+    int errorCode = _nativeScrypt!(passwordBuffer, password.length, saltBuffer,
+        salt.length, 16384, 8, 1, resultBuffer, length);
     if (errorCode == 0) {
       return Uint8List.fromList(resultBuffer.asTypedList(length));
     }
@@ -232,7 +254,9 @@ Future<Uint8List> _hashPassword(
       calloc.free(saltBuffer);
     }
     if (passwordBuffer != null) {
-      passwordBuffer.asTypedList(password.length).fillRange(0, password.length, 0);
+      passwordBuffer
+          .asTypedList(password.length)
+          .fillRange(0, password.length, 0);
       calloc.free(passwordBuffer);
     }
     if (resultBuffer != null) {
@@ -249,4 +273,3 @@ Future<Uint8List> _hashPassword(
   log.fine("Key derived");
   return result;
 }
-

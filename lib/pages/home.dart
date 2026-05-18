@@ -31,11 +31,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   bool _isCreatingNewNote = false;
   int _refreshCounter = 0;
   bool _isBusy = false;
-  bool _hasNavigatedToEdit = false;
 
   final GlobalKey<NoteEditState> _noteEditKey = GlobalKey<NoteEditState>();
   final GlobalKey<NoteListState> _noteListKey = GlobalKey<NoteListState>();
-  Route? _editRoute;
 
   @override
   void initState() {
@@ -73,164 +71,127 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        bool isTabletLandscape = constraints.maxWidth > 600 &&
-            MediaQuery.of(context).orientation == Orientation.landscape;
+    bool isEditing = _password != null && (_selectedNoteId != null || _isCreatingNewNote);
 
-        if (isTabletLandscape) {
-          if (_hasNavigatedToEdit) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted && _hasNavigatedToEdit) {
-                if (_editRoute != null) {
-                  Navigator.removeRoute(context, _editRoute!);
-                  _editRoute = null;
-                }
-                setState(() {
-                  _hasNavigatedToEdit = false;
-                });
-              }
-            });
-          }
+    return PopScope(
+      canPop: !isEditing,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) {
+          return;
+        }
+        if (isEditing) {
+          setState(() {
+            _selectedNoteId = null;
+            _isCreatingNewNote = false;
+          });
+        }
+      },
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          bool isTabletLandscape = constraints.maxWidth > 600 &&
+              MediaQuery.of(context).orientation == Orientation.landscape;
 
-          return LoadingOverlay(
-            isLoading: _isBusy,
-            child: Scaffold(
-              body: Row(
-                children: [
-                  Expanded(
-                    flex: 4,
-                    child: MediaQuery.removePadding(
-                      context: context,
-                      removeRight: true,
-                      child: NoteList(
-                        key: _noteListKey,
-                        password: _password,
-                        refreshCounter: _refreshCounter,
-                        drawer: SafeArea(child: _buildMainDrawer()),
-                        onPasswordRequested: () => _displayPasswordInputDialog(context),
-                        onRefreshRequested: () => setState(() => _refreshCounter++),
-                        onNoteSelected: (id) => setState(() {
-                          _selectedNoteId = id;
-                          _isCreatingNewNote = false;
-                        }),
-                        onNewNoteRequested: () => setState(() {
-                          _selectedNoteId = null;
-                          _isCreatingNewNote = true;
-                        }),
+          if (isTabletLandscape) {
+            return LoadingOverlay(
+              isLoading: _isBusy,
+              child: Scaffold(
+                body: Row(
+                  children: [
+                    Expanded(
+                      flex: 4,
+                      child: MediaQuery.removePadding(
+                        context: context,
+                        removeRight: true,
+                        child: NoteList(
+                          key: _noteListKey,
+                          password: _password,
+                          refreshCounter: _refreshCounter,
+                          drawer: SafeArea(child: _buildMainDrawer()),
+                          onPasswordRequested: () => _displayPasswordInputDialog(context),
+                          onRefreshRequested: () => setState(() => _refreshCounter++),
+                          onNoteSelected: (id) => setState(() {
+                            _selectedNoteId = id;
+                            _isCreatingNewNote = false;
+                          }),
+                          onNewNoteRequested: () => setState(() {
+                            _selectedNoteId = null;
+                            _isCreatingNewNote = true;
+                          }),
+                        ),
                       ),
                     ),
-                  ),
-                  Expanded(
-                    flex: 6,
-                    child: MediaQuery.removePadding(
-                      context: context,
-                      removeLeft: true,
-                      child: _password == null || (_selectedNoteId == null && !_isCreatingNewNote)
-                          ? Container(color: Theme.of(context).colorScheme.surface)
-                          : NoteEdit(
-                              key: _noteEditKey,
-                              id: _selectedNoteId,
-                              password: _password!,
-                              onNoteSaved: (id) {
-                                setState(() {
-                                  _selectedNoteId = id;
-                                  _isCreatingNewNote = false;
-                                  _refreshCounter++;
-                                });
-                              },
-                              onNoteDeleted: (id) {
-                                if (id != null) {
-                                  _noteListKey.currentState?.doDeleteNote(id);
-                                }
-                                setState(() {
-                                  _selectedNoteId = null;
-                                  _isCreatingNewNote = false;
-                                  _refreshCounter++;
-                                });
-                              },
-                              onNoteCancelled: () {
-                                setState(() {
-                                  _selectedNoteId = null;
-                                  _isCreatingNewNote = false;
-                                });
-                              },
-                            ),
+                    Expanded(
+                      flex: 6,
+                      child: MediaQuery.removePadding(
+                        context: context,
+                        removeLeft: true,
+                        child: (_password == null || (_selectedNoteId == null && !_isCreatingNewNote))
+                            ? Container(color: Theme.of(context).colorScheme.surface)
+                            : _buildNoteEdit(),
+                      ),
                     ),
+                  ],
+                ),
+              ),
+            );
+          } else {
+            return LoadingOverlay(
+              isLoading: _isBusy,
+              child: Stack(
+                children: [
+                  NoteList(
+                    key: _noteListKey,
+                    password: _password,
+                    refreshCounter: _refreshCounter,
+                    drawer: SafeArea(child: _buildMainDrawer()),
+                    onPasswordRequested: () => _displayPasswordInputDialog(context),
+                    onRefreshRequested: () => setState(() => _refreshCounter++),
+                    onNoteSelected: (id) => setState(() {
+                      _selectedNoteId = id;
+                      _isCreatingNewNote = false;
+                    }),
+                    onNewNoteRequested: () => setState(() {
+                      _selectedNoteId = null;
+                      _isCreatingNewNote = true;
+                    }),
                   ),
+                  if (isEditing) _buildNoteEdit(),
                 ],
               ),
-            ),
-          );
-        } else {
-          if (_password != null &&
-              (_selectedNoteId != null || _isCreatingNewNote) &&
-              !_hasNavigatedToEdit) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted && !_hasNavigatedToEdit &&
-                  MediaQuery.of(context).orientation == Orientation.portrait) {
-                setState(() {
-                  _hasNavigatedToEdit = true;
-                });
-                _editRoute = MaterialPageRoute(
-                  builder: (context) => NoteEditPage(
-                    _isCreatingNewNote ? 'new' : _selectedNoteId.toString(),
-                    noteEditKey: _noteEditKey,
-                  ),
-                  settings: RouteSettings(arguments: {'password': _password}),
-                );
-                Navigator.of(context).push(_editRoute!).then((value) {
-                  if (value == 'doDelete' && _selectedNoteId != null) {
-                    _noteListKey.currentState?.doDeleteNote(_selectedNoteId!);
-                  }
-                  if (mounted) {
-                    setState(() {
-                      _hasNavigatedToEdit = false;
-                      _selectedNoteId = null;
-                      _isCreatingNewNote = false;
-                    });
-                  }
-                });
-              }
-            });
+            );
           }
-          
-          Widget offstageNoteEdit = Offstage(
-            offstage: true,
-            child: _password == null || (_selectedNoteId == null && !_isCreatingNewNote)
-                ? Container()
-                : NoteEdit(
-                    key: _noteEditKey,
-                    id: _selectedNoteId,
-                    password: _password!,
-                  ),
-          );
+        },
+      ),
+    );
+  }
 
-          return LoadingOverlay(
-            isLoading: _isBusy,
-            child: Stack(
-              children: [
-                NoteList(
-                  key: _noteListKey,
-                  password: _password,
-                  refreshCounter: _refreshCounter,
-                  drawer: SafeArea(child: _buildMainDrawer()),
-                  onPasswordRequested: () => _displayPasswordInputDialog(context),
-                  onRefreshRequested: () => setState(() => _refreshCounter++),
-                  onNoteSelected: (id) => setState(() {
-                    _selectedNoteId = id;
-                    _isCreatingNewNote = false;
-                  }),
-                  onNewNoteRequested: () => setState(() {
-                    _selectedNoteId = null;
-                    _isCreatingNewNote = true;
-                  }),
-                ),
-                if (!_hasNavigatedToEdit) offstageNoteEdit,
-              ],
-            ),
-          );
+  Widget _buildNoteEdit() {
+    return NoteEdit(
+      key: _noteEditKey,
+      id: _selectedNoteId,
+      password: _password!,
+      onNoteSaved: (id) {
+        setState(() {
+          _selectedNoteId = id;
+          _isCreatingNewNote = false;
+          _refreshCounter++;
+        });
+      },
+      onNoteDeleted: (id) {
+        if (id != null) {
+          _noteListKey.currentState?.doDeleteNote(id);
         }
+        setState(() {
+          _selectedNoteId = null;
+          _isCreatingNewNote = false;
+          _refreshCounter++;
+        });
+      },
+      onNoteCancelled: () {
+        setState(() {
+          _selectedNoteId = null;
+          _isCreatingNewNote = false;
+        });
       },
     );
   }

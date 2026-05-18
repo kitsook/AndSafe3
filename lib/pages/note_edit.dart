@@ -12,32 +12,38 @@ import 'package:loading_overlay/loading_overlay.dart';
 
 class NoteEditPage extends StatelessWidget {
   final String id;
+  final Key? noteEditKey;
 
-  NoteEditPage(this.id);
+  NoteEditPage(this.id, {this.noteEditKey});
 
   @override
   Widget build(BuildContext context) {
     var arguments = ModalRoute.of(context)!.settings.arguments as Map;
     Uint8List password = arguments['password']!;
-    return _NoteEdit(int.tryParse(this.id), password);
+    return NoteEdit(
+      key: noteEditKey,
+      id: int.tryParse(this.id),
+      password: password,
+    );
   }
 }
 
-class _NoteEdit extends StatefulWidget {
+class NoteEdit extends StatefulWidget {
   final int? id;
   final Uint8List password;
+  final ValueChanged<int?>? onNoteSaved;
+  final ValueChanged<int?>? onNoteDeleted;
+  final VoidCallback? onNoteCancelled;
 
-  _NoteEdit(this.id, this.password);
+  NoteEdit({Key? key, this.id, required this.password, this.onNoteSaved, this.onNoteDeleted, this.onNoteCancelled}) : super(key: key);
 
   @override
   State<StatefulWidget> createState() {
-    return _NoteEditState(this.id, this.password);
+    return NoteEditState();
   }
 }
 
-class _NoteEditState extends State<_NoteEdit> {
-  final int? id;
-  final Uint8List password;
+class NoteEditState extends State<NoteEdit> {
   final _formKey = GlobalKey<FormState>();
 
   final titleFieldController = TextEditingController();
@@ -48,12 +54,18 @@ class _NoteEditState extends State<_NoteEdit> {
 
   int _selectedCategory = 0;
 
-  _NoteEditState(this.id, this.password);
-
   @override
   void initState() {
     super.initState();
     this._loadNoteFuture = _loadTheNote();
+  }
+
+  @override
+  void didUpdateWidget(NoteEdit oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.id != oldWidget.id) {
+      this._loadNoteFuture = _loadTheNote();
+    }
   }
 
   @override
@@ -64,11 +76,11 @@ class _NoteEditState extends State<_NoteEdit> {
   }
 
   Future<bool> _loadTheNote() async {
-    if (id != null) {
-      Note? note = await db.adapter.getNote(id!);
+    if (widget.id != null) {
+      Note? note = await db.adapter.getNote(widget.id!);
       if (note != null) {
         titleFieldController.text = note.title;
-        bodyFieldController.text = await getNotePlainBody(note, password);
+        bodyFieldController.text = await getNotePlainBody(note, widget.password);
         _selectedCategory = note.categoryId;
         return true;
       }
@@ -80,10 +92,10 @@ class _NoteEditState extends State<_NoteEdit> {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          title: Text(id == null ?
+          title: Text(widget.id == null ?
             AppLocalizations.of(context)!.createNoteTitle :
             AppLocalizations.of(context)!.editNoteTitle),
-          actions: _buildTitleActionButtons(id),
+          actions: _buildTitleActionButtons(widget.id),
         ),
         body: LoadingOverlay(
           isLoading: this._isBusy,
@@ -92,7 +104,7 @@ class _NoteEditState extends State<_NoteEdit> {
               future: _loadNoteFuture,
               builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
                 if (snapshot.hasError) {
-                  log.severe("Problem loading the note $id");
+                  log.severe("Problem loading the note ${widget.id}");
                   log.severe(snapshot.error.toString());
                   return Container(
                       child: Center(child: Text(AppLocalizations.of(context)!.errorLoadingNote)));
@@ -100,7 +112,7 @@ class _NoteEditState extends State<_NoteEdit> {
                 if (snapshot.data == null) {
                   return Container(
                       child: Center(child: CircularProgressIndicator()));
-                } else if (snapshot.data! || (!snapshot.data! && id == null)) {
+                } else if (snapshot.data! || (!snapshot.data! && widget.id == null)) {
                   return Form(
                     key: _formKey,
                     child: SingleChildScrollView(
@@ -120,7 +132,7 @@ class _NoteEditState extends State<_NoteEdit> {
                 }
 
                 // Normally shouldn't reach here
-                log.severe("Problem loading the note $id");
+                log.severe("Problem loading the note ${widget.id}");
                 return Container(
                     child: Center(child: Text(AppLocalizations.of(context)!.errorLoadingNote)));
               },
@@ -137,7 +149,11 @@ class _NoteEditState extends State<_NoteEdit> {
       IconButton(
         icon: Icon(Icons.delete_rounded),
         onPressed: () {
-          Navigator.pop(context, 'doDelete');
+          if (widget.onNoteDeleted != null) {
+            widget.onNoteDeleted!(id);
+          } else {
+            Navigator.pop(context, 'doDelete');
+          }
         },
       ),
     ];
@@ -154,7 +170,7 @@ class _NoteEditState extends State<_NoteEdit> {
       children: [
         Expanded(
           child: TextFormField(
-            autofocus: id == null,
+            autofocus: widget.id == null,
             controller: titleFieldController,
             decoration: new InputDecoration(
                 contentPadding:
@@ -209,43 +225,64 @@ class _NoteEditState extends State<_NoteEdit> {
   Widget _buildActionButtons() {
     return Container(
       margin: const EdgeInsets.all(10.0),
-      child: ElevatedButton(
-        onPressed: () async {
-          // validate form fields
-          if (_formKey.currentState!.validate()) {
-            setState(() {
-              this._isBusy = true;
-            });
-            try {
-              Note theNote = await createNote(
-                id,
-                _selectedCategory,
-                titleFieldController.text,
-                // cannot encrypt empty block. add an empty line if there is nothing
-                bodyFieldController.text.length == 0
-                    ? "\n"
-                    : bodyFieldController.text,
-                password,
-              );
-              int? newId = id;
-              if (id == null) {
-                newId = await db.adapter.insertNote(theNote);
-              } else {
-                await db.adapter.updateNote(theNote);
+      child: Row(
+        children: [
+          ElevatedButton(
+            onPressed: () async {
+              // validate form fields
+              if (_formKey.currentState!.validate()) {
+                setState(() {
+                  this._isBusy = true;
+                });
+                try {
+                  Note theNote = await createNote(
+                    widget.id,
+                    _selectedCategory,
+                    titleFieldController.text,
+                    // cannot encrypt empty block. add an empty line if there is nothing
+                    bodyFieldController.text.length == 0
+                        ? "\n"
+                        : bodyFieldController.text,
+                    widget.password,
+                  );
+                  int? newId = widget.id;
+                  if (widget.id == null) {
+                    newId = await db.adapter.insertNote(theNote);
+                  } else {
+                    await db.adapter.updateNote(theNote);
+                  }
+                  if (widget.onNoteSaved != null) {
+                    widget.onNoteSaved!(newId);
+                  } else {
+                    Navigator.pop(context, newId);
+                  }
+                } catch (e) {
+                  log.severe("Failed to save the note");
+                  log.severe(e.toString());
+                  displaySnackBarMsg(context: context, msg: AppLocalizations.of(context)!.failedToSaveTheNote);
+                } finally {
+                  if (mounted) {
+                    setState(() {
+                      this._isBusy = false;
+                    });
+                  }
+                }
               }
-              Navigator.pop(context, newId);
-            } catch (e) {
-              log.severe("Failed to save the note");
-              log.severe(e.toString());
-              displaySnackBarMsg(context: context, msg: AppLocalizations.of(context)!.failedToSaveTheNote);
-            } finally {
-              setState(() {
-                this._isBusy = false;
-              });
-            }
-          }
-        },
-        child: Text(AppLocalizations.of(context)!.saveButton),
+            },
+            child: Text(AppLocalizations.of(context)!.saveButton),
+          ),
+          SizedBox(width: 10),
+          TextButton(
+            onPressed: () {
+              if (widget.onNoteCancelled != null) {
+                widget.onNoteCancelled!();
+              } else {
+                Navigator.pop(context);
+              }
+            },
+            child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
+          ),
+        ],
       ),
     );
   }

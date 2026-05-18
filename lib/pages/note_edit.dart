@@ -123,8 +123,6 @@ class NoteEditState extends State<NoteEdit> {
                           _buildTitleFiled(),
                           _buildVerticalSpacing(),
                           _buildBodyField(),
-                          _buildVerticalSpacing(),
-                          _buildActionButtons()
                         ],
                       ),
                     ),
@@ -142,20 +140,76 @@ class NoteEditState extends State<NoteEdit> {
   }
 
   List<Widget> _buildTitleActionButtons(int? id) {
-    if (id == null) {
-      return [];
-    }
     return [
       IconButton(
-        icon: Icon(Icons.delete_rounded),
-        onPressed: () {
-          if (widget.onNoteDeleted != null) {
-            widget.onNoteDeleted!(id);
-          } else {
-            Navigator.pop(context, 'doDelete');
+        icon: Icon(Icons.check_rounded),
+        tooltip: AppLocalizations.of(context)!.saveButton,
+        onPressed: () async {
+          if (_formKey.currentState!.validate()) {
+            setState(() {
+              this._isBusy = true;
+            });
+            try {
+              Note theNote = await createNote(
+                widget.id,
+                _selectedCategory,
+                titleFieldController.text,
+                bodyFieldController.text.length == 0
+                    ? "\n"
+                    : bodyFieldController.text,
+                widget.password,
+              );
+              int? newId = widget.id;
+              if (widget.id == null) {
+                newId = await db.adapter.insertNote(theNote);
+              } else {
+                await db.adapter.updateNote(theNote);
+              }
+              if (widget.onNoteSaved != null) {
+                widget.onNoteSaved!(newId);
+              } else {
+                Navigator.pop(context, newId);
+              }
+            } catch (e) {
+              log.severe("Failed to save the note");
+              log.severe(e.toString());
+              displaySnackBarMsg(context: context, msg: AppLocalizations.of(context)!.failedToSaveTheNote);
+            } finally {
+              if (mounted) {
+                setState(() {
+                  this._isBusy = false;
+                });
+              }
+            }
           }
         },
       ),
+      IconButton(
+        icon: Icon(Icons.close_rounded),
+        tooltip: MaterialLocalizations.of(context).cancelButtonLabel,
+        onPressed: () {
+          if (widget.onNoteCancelled != null) {
+            widget.onNoteCancelled!();
+          } else {
+            Navigator.pop(context);
+          }
+        },
+      ),
+      if (id != null)
+        Padding(
+          padding: const EdgeInsets.only(left: 16.0),
+          child: IconButton(
+            icon: Icon(Icons.delete_rounded),
+            tooltip: "Delete",
+            onPressed: () {
+              if (widget.onNoteDeleted != null) {
+                widget.onNoteDeleted!(id);
+              } else {
+                Navigator.pop(context, 'doDelete');
+              }
+            },
+          ),
+        ),
     ];
   }
 
@@ -222,68 +276,4 @@ class NoteEditState extends State<NoteEdit> {
     );
   }
 
-  Widget _buildActionButtons() {
-    return Container(
-      margin: const EdgeInsets.all(10.0),
-      child: Row(
-        children: [
-          ElevatedButton(
-            onPressed: () async {
-              // validate form fields
-              if (_formKey.currentState!.validate()) {
-                setState(() {
-                  this._isBusy = true;
-                });
-                try {
-                  Note theNote = await createNote(
-                    widget.id,
-                    _selectedCategory,
-                    titleFieldController.text,
-                    // cannot encrypt empty block. add an empty line if there is nothing
-                    bodyFieldController.text.length == 0
-                        ? "\n"
-                        : bodyFieldController.text,
-                    widget.password,
-                  );
-                  int? newId = widget.id;
-                  if (widget.id == null) {
-                    newId = await db.adapter.insertNote(theNote);
-                  } else {
-                    await db.adapter.updateNote(theNote);
-                  }
-                  if (widget.onNoteSaved != null) {
-                    widget.onNoteSaved!(newId);
-                  } else {
-                    Navigator.pop(context, newId);
-                  }
-                } catch (e) {
-                  log.severe("Failed to save the note");
-                  log.severe(e.toString());
-                  displaySnackBarMsg(context: context, msg: AppLocalizations.of(context)!.failedToSaveTheNote);
-                } finally {
-                  if (mounted) {
-                    setState(() {
-                      this._isBusy = false;
-                    });
-                  }
-                }
-              }
-            },
-            child: Text(AppLocalizations.of(context)!.saveButton),
-          ),
-          SizedBox(width: 10),
-          TextButton(
-            onPressed: () {
-              if (widget.onNoteCancelled != null) {
-                widget.onNoteCancelled!();
-              } else {
-                Navigator.pop(context);
-              }
-            },
-            child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
-          ),
-        ],
-      ),
-    );
-  }
-}
+ }

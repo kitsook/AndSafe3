@@ -68,7 +68,8 @@ class NoteEditState extends State<NoteEdit> {
   bool _isUndoSnackbarShowing = false;
   bool _forcePop = false;
 
-  ScaffoldMessengerState? _scaffoldMessenger;
+  final GlobalKey<ScaffoldMessengerState> _messengerKey = GlobalKey<ScaffoldMessengerState>();
+  ScaffoldMessengerState? get _scaffoldMessenger => _messengerKey.currentState;
 
   @override
   void initState() {
@@ -79,7 +80,18 @@ class NoteEditState extends State<NoteEdit> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _scaffoldMessenger = ScaffoldMessenger.of(context);
+    
+    // If the layout changes (e.g. rotation), ScaffoldMessenger might duplicate the snackbar.
+    // We hide it and re-evaluate if it needs to be shown after the frame.
+    if (_isUndoSnackbarShowing) {
+      _scaffoldMessenger?.clearSnackBars();
+      _isUndoSnackbarShowing = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _hasStartedEditing && _hasChanges()) {
+          _onFieldChanged();
+        }
+      });
+    }
   }
 
   @override
@@ -135,24 +147,29 @@ class NoteEditState extends State<NoteEdit> {
     if (hasChanges && !_isUndoSnackbarShowing) {
       _isUndoSnackbarShowing = true;
       _hasStartedEditing = true;
-      var controller = displaySnackBarMsg(
-        context: context,
+      
+      _scaffoldMessenger?.clearSnackBars();
+      var controller = _scaffoldMessenger?.showSnackBar(SnackBar(
         content: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
               icon: Icon(Icons.undo),
+              color: Theme.of(context).snackBarTheme.actionTextColor ?? Theme.of(context).colorScheme.inversePrimary,
               onPressed: () {
                 _undoChanges();
               },
             ),
           ],
         ),
+        behavior: SnackBarBehavior.floating,
+        width: 80.0,
         duration: Duration(days: 365), // persist
-      );
+      ));
       
-      controller.closed.then((reason) {
-        if (mounted) {
+      controller?.closed.then((reason) {
+        if (mounted && reason != SnackBarClosedReason.hide && reason != SnackBarClosedReason.remove) {
           _isUndoSnackbarShowing = false;
         }
       });
@@ -254,64 +271,72 @@ class NoteEditState extends State<NoteEdit> {
         if (didPop) return;
         await _handleNavigateAway(isPopInvoked: true);
       },
-      child: Scaffold(
-          appBar: AppBar(
-            leading: IconButton(
-              icon: Icon(Icons.arrow_back_rounded),
-              onPressed: () async {
-                await _handleNavigateAway(isPopInvoked: false, isCancelAction: true);
-              },
-            ),
-            title: Text(widget.id == null
-                ? AppLocalizations.of(context)!.createNoteTitle
-                : AppLocalizations.of(context)!.editNoteTitle),
-            actions: _buildTitleActionButtons(widget.id),
-          ),
-          body: LoadingOverlay(
-            isLoading: this._isBusy,
-            child: Container(
-              child: FutureBuilder(
-                future: _loadNoteFuture,
-                builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
-                  if (snapshot.hasError) {
-                    log.severe("Problem loading the note ${widget.id}");
-                    log.severe(snapshot.error.toString());
-                    return Container(
-                        child: Center(
-                            child: Text(
-                                AppLocalizations.of(context)!.errorLoadingNote)));
-                  }
-                  if (snapshot.data == null) {
-                    return Container(
-                        child: Center(child: CircularProgressIndicator()));
-                  } else if (snapshot.data! ||
-                      (!snapshot.data! && widget.id == null)) {
-                    return Form(
-                      key: _formKey,
-                      child: SingleChildScrollView(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            _buildVerticalSpacing(),
-                            _buildTitleFiled(),
-                            _buildVerticalSpacing(),
-                            _buildBodyField(),
-                          ],
-                        ),
-                      ),
-                    );
-                  }
-  
-                  // Normally shouldn't reach here
-                  log.severe("Problem loading the note ${widget.id}");
-                  return Container(
-                      child: Center(
-                          child: Text(
-                              AppLocalizations.of(context)!.errorLoadingNote)));
-                },
+      child: ScaffoldMessenger(
+        key: _messengerKey,
+        child: Builder(
+          builder: (context) {
+            return Scaffold(
+              appBar: AppBar(
+                leading: IconButton(
+                  icon: Icon(Icons.arrow_back_rounded),
+                  onPressed: () async {
+                    await _handleNavigateAway(isPopInvoked: false, isCancelAction: true);
+                  },
+                ),
+                title: Text(widget.id == null
+                    ? AppLocalizations.of(context)!.createNoteTitle
+                    : AppLocalizations.of(context)!.editNoteTitle),
+                actions: _buildTitleActionButtons(widget.id),
               ),
-            ),
-          )),
+              body: LoadingOverlay(
+                isLoading: this._isBusy,
+                child: Container(
+                  child: FutureBuilder(
+                    future: _loadNoteFuture,
+                    builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
+                      if (snapshot.hasError) {
+                        log.severe("Problem loading the note ${widget.id}");
+                        log.severe(snapshot.error.toString());
+                        return Container(
+                            child: Center(
+                                child: Text(
+                                    AppLocalizations.of(context)!.errorLoadingNote)));
+                      }
+                      if (snapshot.data == null) {
+                        return Container(
+                            child: Center(child: CircularProgressIndicator()));
+                      } else if (snapshot.data! ||
+                          (!snapshot.data! && widget.id == null)) {
+                        return Form(
+                          key: _formKey,
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.only(bottom: 100.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                _buildVerticalSpacing(),
+                                _buildTitleFiled(),
+                                _buildVerticalSpacing(),
+                                _buildBodyField(),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
+      
+                      // Normally shouldn't reach here
+                      log.severe("Problem loading the note ${widget.id}");
+                      return Container(
+                          child: Center(
+                              child: Text(
+                                  AppLocalizations.of(context)!.errorLoadingNote)));
+                    },
+                  ),
+                ),
+              ));
+          }
+        ),
+      ),
     );
   }
 

@@ -96,6 +96,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             return LoadingOverlay(
               isLoading: _isBusy,
               child: Scaffold(
+                resizeToAvoidBottomInset: false,
                 body: Row(
                   children: [
                     Expanded(

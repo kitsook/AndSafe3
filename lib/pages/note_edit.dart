@@ -68,7 +68,8 @@ class NoteEditState extends State<NoteEdit> {
   bool _isUndoSnackbarShowing = false;
   bool _forcePop = false;
 
-  final GlobalKey<ScaffoldMessengerState> _messengerKey = GlobalKey<ScaffoldMessengerState>();
+  final GlobalKey<ScaffoldMessengerState> _messengerKey =
+      GlobalKey<ScaffoldMessengerState>();
   ScaffoldMessengerState? get _scaffoldMessenger => _messengerKey.currentState;
 
   @override
@@ -80,7 +81,7 @@ class NoteEditState extends State<NoteEdit> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    
+
     // If the layout changes (e.g. rotation), ScaffoldMessenger might duplicate the snackbar.
     // We hide it and re-evaluate if it needs to be shown after the frame.
     if (_isUndoSnackbarShowing) {
@@ -118,12 +119,12 @@ class NoteEditState extends State<NoteEdit> {
         bodyFieldController.text =
             await getNotePlainBody(note, widget.password);
         _selectedCategory = note.categoryId;
-        
+
         _originalTitle = note.title;
         _originalBody = bodyFieldController.text;
         _originalCategory = note.categoryId;
         _hasStartedEditing = false;
-        
+
         return true;
       }
     } else {
@@ -138,8 +139,8 @@ class NoteEditState extends State<NoteEdit> {
 
   bool _hasChanges() {
     return titleFieldController.text != _originalTitle ||
-           bodyFieldController.text != _originalBody ||
-           _selectedCategory != _originalCategory;
+        bodyFieldController.text != _originalBody ||
+        _selectedCategory != _originalCategory;
   }
 
   void _onFieldChanged() {
@@ -147,7 +148,7 @@ class NoteEditState extends State<NoteEdit> {
     if (hasChanges && !_isUndoSnackbarShowing) {
       _isUndoSnackbarShowing = true;
       _hasStartedEditing = true;
-      
+
       _scaffoldMessenger?.clearSnackBars();
       var controller = _scaffoldMessenger?.showSnackBar(SnackBar(
         content: Row(
@@ -156,7 +157,8 @@ class NoteEditState extends State<NoteEdit> {
           children: [
             IconButton(
               icon: Icon(Icons.undo),
-              color: Theme.of(context).snackBarTheme.actionTextColor ?? Theme.of(context).colorScheme.inversePrimary,
+              color: Theme.of(context).snackBarTheme.actionTextColor ??
+                  Theme.of(context).colorScheme.inversePrimary,
               onPressed: () {
                 _undoChanges();
               },
@@ -164,12 +166,16 @@ class NoteEditState extends State<NoteEdit> {
           ],
         ),
         behavior: SnackBarBehavior.floating,
-        width: 80.0,
+        width: 48.0,
+        padding: EdgeInsets.zero,
+        shape: const StadiumBorder(),
         duration: Duration(days: 365), // persist
       ));
-      
+
       controller?.closed.then((reason) {
-        if (mounted && reason != SnackBarClosedReason.hide && reason != SnackBarClosedReason.remove) {
+        if (mounted &&
+            reason != SnackBarClosedReason.hide &&
+            reason != SnackBarClosedReason.remove) {
           _isUndoSnackbarShowing = false;
         }
       });
@@ -191,8 +197,11 @@ class NoteEditState extends State<NoteEdit> {
   }
 
   Future<int?> _autoSave() async {
-    final currentTitle = titleFieldController.text.trim().isEmpty ? "Untitled Note" : titleFieldController.text;
-    final currentBody = bodyFieldController.text.isEmpty ? "\n" : bodyFieldController.text;
+    final currentTitle = titleFieldController.text.trim().isEmpty
+        ? "Untitled Note"
+        : titleFieldController.text;
+    final currentBody =
+        bodyFieldController.text.isEmpty ? "\n" : bodyFieldController.text;
     try {
       Note theNote = await createNote(
         widget.id,
@@ -218,7 +227,8 @@ class NoteEditState extends State<NoteEdit> {
     }
   }
 
-  Future<void> _handleNavigateAway({bool isPopInvoked = false, bool isCancelAction = false}) async {
+  Future<void> _handleNavigateAway(
+      {bool isPopInvoked = false, bool isCancelAction = false}) async {
     if (_hasStartedEditing && _hasChanges()) {
       int? newId = await _autoSave();
       if (mounted) {
@@ -227,21 +237,22 @@ class NoteEditState extends State<NoteEdit> {
         });
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (isPopInvoked) {
-             Navigator.pop(context, newId);
+            Navigator.pop(context, newId);
           } else {
-             if (isCancelAction) {
-               if (widget.onNoteCancelled != null) {
-                 widget.onNoteCancelled!();
-               } else {
-                 Navigator.pop(context); // Note: pop might not pass newId back here, but it's a cancel
-               }
-             } else {
-               if (widget.onNoteSaved != null) {
-                 widget.onNoteSaved!(newId);
-               } else {
-                 Navigator.pop(context, newId);
-               }
-             }
+            if (isCancelAction) {
+              if (widget.onNoteCancelled != null) {
+                widget.onNoteCancelled!();
+              } else {
+                Navigator.pop(
+                    context); // Note: pop might not pass newId back here, but it's a cancel
+              }
+            } else {
+              if (widget.onNoteSaved != null) {
+                widget.onNoteSaved!(newId);
+              } else {
+                Navigator.pop(context, newId);
+              }
+            }
           }
         });
       }
@@ -251,13 +262,13 @@ class NoteEditState extends State<NoteEdit> {
       });
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (isPopInvoked) {
-           Navigator.pop(context);
+          Navigator.pop(context);
         } else {
-           if (widget.onNoteCancelled != null) {
-             widget.onNoteCancelled!();
-           } else {
-             Navigator.pop(context);
-           }
+          if (widget.onNoteCancelled != null) {
+            widget.onNoteCancelled!();
+          } else {
+            Navigator.pop(context);
+          }
         }
       });
     }
@@ -273,14 +284,14 @@ class NoteEditState extends State<NoteEdit> {
       },
       child: ScaffoldMessenger(
         key: _messengerKey,
-        child: Builder(
-          builder: (context) {
-            return Scaffold(
+        child: Builder(builder: (context) {
+          return Scaffold(
               appBar: AppBar(
                 leading: IconButton(
                   icon: Icon(Icons.arrow_back_rounded),
                   onPressed: () async {
-                    await _handleNavigateAway(isPopInvoked: false, isCancelAction: true);
+                    await _handleNavigateAway(
+                        isPopInvoked: false, isCancelAction: true);
                   },
                 ),
                 title: Text(widget.id == null
@@ -293,14 +304,15 @@ class NoteEditState extends State<NoteEdit> {
                 child: Container(
                   child: FutureBuilder(
                     future: _loadNoteFuture,
-                    builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
+                    builder:
+                        (BuildContext context, AsyncSnapshot<bool> snapshot) {
                       if (snapshot.hasError) {
                         log.severe("Problem loading the note ${widget.id}");
                         log.severe(snapshot.error.toString());
                         return Container(
                             child: Center(
-                                child: Text(
-                                    AppLocalizations.of(context)!.errorLoadingNote)));
+                                child: Text(AppLocalizations.of(context)!
+                                    .errorLoadingNote)));
                       }
                       if (snapshot.data == null) {
                         return Container(
@@ -323,19 +335,18 @@ class NoteEditState extends State<NoteEdit> {
                           ),
                         );
                       }
-      
+
                       // Normally shouldn't reach here
                       log.severe("Problem loading the note ${widget.id}");
                       return Container(
                           child: Center(
-                              child: Text(
-                                  AppLocalizations.of(context)!.errorLoadingNote)));
+                              child: Text(AppLocalizations.of(context)!
+                                  .errorLoadingNote)));
                     },
                   ),
                 ),
               ));
-          }
-        ),
+        }),
       ),
     );
   }

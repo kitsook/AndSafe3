@@ -18,6 +18,9 @@ const _scryptSaltLength = 32;
 const _aesIvLength = 16;
 const _aesKeyLength = 32;
 const _signatureLength = 32;
+const _scryptN = 16384;
+const _scryptR = 8;
+const _scryptP = 1;
 
 //function to native scrypt
 int Function(
@@ -242,7 +245,7 @@ Future<Uint8List> _hashPassword(
     resultBuffer = calloc<Uint8>(length);
 
     int errorCode = _nativeScrypt!(passwordBuffer, password.length, saltBuffer,
-        salt.length, 16384, 8, 1, resultBuffer, length);
+        salt.length, _scryptN, _scryptR, _scryptP, resultBuffer, length);
     if (errorCode == 0) {
       return Uint8List.fromList(resultBuffer.asTypedList(length));
     }
@@ -267,7 +270,7 @@ Future<Uint8List> _hashPassword(
   // fallback to Dart version
   log.fine("Deriving key...");
   final kd = KeyDerivator('scrypt');
-  kd.init(ScryptParameters(16384, 8, 1, length, salt));
+  kd.init(ScryptParameters(_scryptN, _scryptR, _scryptP, length, salt));
   final result = kd.process(password);
   password.fillRange(0, password.length, 0);
   log.fine("Key derived");

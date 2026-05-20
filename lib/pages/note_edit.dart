@@ -61,10 +61,38 @@ class NoteEditState extends State<NoteEdit> {
 
   int _selectedCategory = 0;
 
+  String _originalTitle = "";
+  String _originalBody = "";
+  int _originalCategory = 0;
+  bool _hasStartedEditing = false;
+  bool _isUndoSnackbarShowing = false;
+  bool _forcePop = false;
+
+  final GlobalKey<ScaffoldMessengerState> _messengerKey =
+      GlobalKey<ScaffoldMessengerState>();
+  ScaffoldMessengerState? get _scaffoldMessenger => _messengerKey.currentState;
+
   @override
   void initState() {
     super.initState();
     this._loadNoteFuture = _loadTheNote();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // If the layout changes (e.g. rotation), ScaffoldMessenger might duplicate the snackbar.
+    // We hide it and re-evaluate if it needs to be shown after the frame.
+    if (_isUndoSnackbarShowing) {
+      _scaffoldMessenger?.clearSnackBars();
+      _isUndoSnackbarShowing = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _hasStartedEditing && _hasChanges()) {
+          _onFieldChanged();
+        }
+      });
+    }
   }
 
   @override
@@ -77,6 +105,7 @@ class NoteEditState extends State<NoteEdit> {
 
   @override
   void dispose() {
+    _scaffoldMessenger?.clearSnackBars();
     titleFieldController.dispose();
     bodyFieldController.dispose();
     super.dispose();
@@ -90,126 +119,240 @@ class NoteEditState extends State<NoteEdit> {
         bodyFieldController.text =
             await getNotePlainBody(note, widget.password);
         _selectedCategory = note.categoryId;
+
+        _originalTitle = note.title;
+        _originalBody = bodyFieldController.text;
+        _originalCategory = note.categoryId;
+        _hasStartedEditing = false;
+
         return true;
       }
+    } else {
+      _originalTitle = "";
+      _originalBody = "";
+      _originalCategory = 0;
+      _hasStartedEditing = false;
+      return true;
     }
     return false;
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-        appBar: AppBar(
-          title: Text(widget.id == null
-              ? AppLocalizations.of(context)!.createNoteTitle
-              : AppLocalizations.of(context)!.editNoteTitle),
-          actions: _buildTitleActionButtons(widget.id),
-        ),
-        body: LoadingOverlay(
-          isLoading: this._isBusy,
-          child: Container(
-            child: FutureBuilder(
-              future: _loadNoteFuture,
-              builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
-                if (snapshot.hasError) {
-                  log.severe("Problem loading the note ${widget.id}");
-                  log.severe(snapshot.error.toString());
-                  return Container(
-                      child: Center(
-                          child: Text(
-                              AppLocalizations.of(context)!.errorLoadingNote)));
-                }
-                if (snapshot.data == null) {
-                  return Container(
-                      child: Center(child: CircularProgressIndicator()));
-                } else if (snapshot.data! ||
-                    (!snapshot.data! && widget.id == null)) {
-                  return Form(
-                    key: _formKey,
-                    child: SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          _buildVerticalSpacing(),
-                          _buildTitleFiled(),
-                          _buildVerticalSpacing(),
-                          _buildBodyField(),
-                        ],
-                      ),
-                    ),
-                  );
-                }
-
-                // Normally shouldn't reach here
-                log.severe("Problem loading the note ${widget.id}");
-                return Container(
-                    child: Center(
-                        child: Text(
-                            AppLocalizations.of(context)!.errorLoadingNote)));
-              },
-            ),
-          ),
-        ));
+  bool _hasChanges() {
+    return titleFieldController.text != _originalTitle ||
+        bodyFieldController.text != _originalBody ||
+        _selectedCategory != _originalCategory;
   }
 
-  List<Widget> _buildTitleActionButtons(int? id) {
-    return [
-      IconButton(
-        icon: Icon(Icons.check_rounded),
-        tooltip: AppLocalizations.of(context)!.saveButton,
-        onPressed: () async {
-          if (_formKey.currentState!.validate()) {
-            setState(() {
-              this._isBusy = true;
-            });
-            try {
-              Note theNote = await createNote(
-                widget.id,
-                _selectedCategory,
-                titleFieldController.text,
-                bodyFieldController.text.length == 0
-                    ? "\n"
-                    : bodyFieldController.text,
-                widget.password,
-              );
-              int? newId = widget.id;
-              if (widget.id == null) {
-                newId = await db.adapter.insertNote(theNote);
+  void _onFieldChanged() {
+    bool hasChanges = _hasChanges();
+    if (hasChanges && !_isUndoSnackbarShowing) {
+      _isUndoSnackbarShowing = true;
+      _hasStartedEditing = true;
+
+      _scaffoldMessenger?.clearSnackBars();
+      var controller = _scaffoldMessenger?.showSnackBar(SnackBar(
+        content: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: Icon(Icons.undo),
+              color: Theme.of(context).snackBarTheme.actionTextColor ??
+                  Theme.of(context).colorScheme.inversePrimary,
+              onPressed: () {
+                _undoChanges();
+              },
+            ),
+          ],
+        ),
+        behavior: SnackBarBehavior.floating,
+        width: 48.0,
+        padding: EdgeInsets.zero,
+        shape: const StadiumBorder(),
+        duration: Duration(days: 365), // persist
+      ));
+
+      controller?.closed.then((reason) {
+        if (mounted &&
+            reason != SnackBarClosedReason.hide &&
+            reason != SnackBarClosedReason.remove) {
+          _isUndoSnackbarShowing = false;
+        }
+      });
+    } else if (!hasChanges && _isUndoSnackbarShowing) {
+      _isUndoSnackbarShowing = false;
+      _scaffoldMessenger?.hideCurrentSnackBar();
+    }
+  }
+
+  void _undoChanges() {
+    setState(() {
+      titleFieldController.text = _originalTitle;
+      bodyFieldController.text = _originalBody;
+      _selectedCategory = _originalCategory;
+      _hasStartedEditing = false;
+      _isUndoSnackbarShowing = false;
+    });
+    _scaffoldMessenger?.hideCurrentSnackBar();
+  }
+
+  Future<int?> _autoSave() async {
+    final currentTitle = titleFieldController.text.trim().isEmpty
+        ? "Untitled Note"
+        : titleFieldController.text;
+    final currentBody =
+        bodyFieldController.text.isEmpty ? "\n" : bodyFieldController.text;
+    try {
+      Note theNote = await createNote(
+        widget.id,
+        _selectedCategory,
+        currentTitle,
+        currentBody,
+        widget.password,
+      );
+      int? newId = widget.id;
+      if (widget.id == null) {
+        newId = await db.adapter.insertNote(theNote);
+      } else {
+        await db.adapter.updateNote(theNote);
+      }
+      return newId;
+    } catch (e) {
+      log.severe("Failed to auto-save the note");
+      log.severe(e.toString());
+      displaySnackBarMsg(
+          context: context,
+          msg: AppLocalizations.of(context)!.failedToSaveTheNote);
+      return null;
+    }
+  }
+
+  Future<void> _handleNavigateAway(
+      {bool isPopInvoked = false, bool isCancelAction = false}) async {
+    if (_hasStartedEditing && _hasChanges()) {
+      int? newId = await _autoSave();
+      if (mounted) {
+        setState(() {
+          this._forcePop = true;
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (isPopInvoked) {
+            Navigator.pop(context, newId);
+          } else {
+            if (isCancelAction) {
+              if (widget.onNoteCancelled != null) {
+                widget.onNoteCancelled!();
               } else {
-                await db.adapter.updateNote(theNote);
+                Navigator.pop(
+                    context); // Note: pop might not pass newId back here, but it's a cancel
               }
+            } else {
               if (widget.onNoteSaved != null) {
                 widget.onNoteSaved!(newId);
               } else {
                 Navigator.pop(context, newId);
               }
-            } catch (e) {
-              log.severe("Failed to save the note");
-              log.severe(e.toString());
-              displaySnackBarMsg(
-                  context: context,
-                  msg: AppLocalizations.of(context)!.failedToSaveTheNote);
-            } finally {
-              if (mounted) {
-                setState(() {
-                  this._isBusy = false;
-                });
-              }
             }
           }
-        },
-      ),
-      IconButton(
-        icon: Icon(Icons.close_rounded),
-        tooltip: MaterialLocalizations.of(context).cancelButtonLabel,
-        onPressed: () {
+        });
+      }
+    } else {
+      setState(() {
+        this._forcePop = true;
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (isPopInvoked) {
+          Navigator.pop(context);
+        } else {
           if (widget.onNoteCancelled != null) {
             widget.onNoteCancelled!();
           } else {
             Navigator.pop(context);
           }
-        },
+        }
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: _forcePop || !_hasChanges(),
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        await _handleNavigateAway(isPopInvoked: true);
+      },
+      child: ScaffoldMessenger(
+        key: _messengerKey,
+        child: Builder(builder: (context) {
+          return Scaffold(
+              appBar: AppBar(
+                leading: IconButton(
+                  icon: Icon(Icons.arrow_back_rounded),
+                  onPressed: () async {
+                    await _handleNavigateAway(
+                        isPopInvoked: false, isCancelAction: true);
+                  },
+                ),
+                title: Text(widget.id == null
+                    ? AppLocalizations.of(context)!.createNoteTitle
+                    : AppLocalizations.of(context)!.editNoteTitle),
+                actions: _buildTitleActionButtons(widget.id),
+              ),
+              body: LoadingOverlay(
+                isLoading: this._isBusy,
+                child: Container(
+                  child: FutureBuilder(
+                    future: _loadNoteFuture,
+                    builder:
+                        (BuildContext context, AsyncSnapshot<bool> snapshot) {
+                      if (snapshot.hasError) {
+                        log.severe("Problem loading the note ${widget.id}");
+                        log.severe(snapshot.error.toString());
+                        return Container(
+                            child: Center(
+                                child: Text(AppLocalizations.of(context)!
+                                    .errorLoadingNote)));
+                      }
+                      if (snapshot.data == null) {
+                        return Container(
+                            child: Center(child: CircularProgressIndicator()));
+                      } else if (snapshot.data! ||
+                          (!snapshot.data! && widget.id == null)) {
+                        return Form(
+                          key: _formKey,
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.only(bottom: 100.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                _buildVerticalSpacing(),
+                                _buildTitleFiled(),
+                                _buildVerticalSpacing(),
+                                _buildBodyField(),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
+
+                      // Normally shouldn't reach here
+                      log.severe("Problem loading the note ${widget.id}");
+                      return Container(
+                          child: Center(
+                              child: Text(AppLocalizations.of(context)!
+                                  .errorLoadingNote)));
+                    },
+                  ),
+                ),
+              ));
+        }),
       ),
+    );
+  }
+
+  List<Widget> _buildTitleActionButtons(int? id) {
+    return [
       if (id != null)
         Padding(
           padding: const EdgeInsets.only(left: 16.0),
@@ -217,11 +360,16 @@ class NoteEditState extends State<NoteEdit> {
             icon: Icon(Icons.delete_rounded),
             tooltip: "Delete",
             onPressed: () {
-              if (widget.onNoteDeleted != null) {
-                widget.onNoteDeleted!(id);
-              } else {
-                Navigator.pop(context, 'doDelete');
-              }
+              setState(() {
+                this._forcePop = true;
+              });
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (widget.onNoteDeleted != null) {
+                  widget.onNoteDeleted!(id);
+                } else {
+                  Navigator.pop(context, 'doDelete');
+                }
+              });
             },
           ),
         ),
@@ -241,6 +389,7 @@ class NoteEditState extends State<NoteEdit> {
           child: TextFormField(
             autofocus: widget.id == null,
             controller: titleFieldController,
+            onChanged: (value) => _onFieldChanged(),
             decoration: new InputDecoration(
                 contentPadding:
                     EdgeInsets.only(left: 15, bottom: 11, top: 11, right: 15),
@@ -269,6 +418,7 @@ class NoteEditState extends State<NoteEdit> {
               onChanged: (value) {
                 setState(() {
                   _selectedCategory = value ?? 0;
+                  _onFieldChanged();
                 });
               },
             ),
@@ -281,6 +431,7 @@ class NoteEditState extends State<NoteEdit> {
   Widget _buildBodyField() {
     return TextFormField(
       controller: bodyFieldController,
+      onChanged: (value) => _onFieldChanged(),
       keyboardType: TextInputType.multiline,
       minLines: 5,
       maxLines: null,

@@ -106,6 +106,11 @@ class NoteEditState extends State<NoteEdit> {
   @override
   void dispose() {
     _scaffoldMessenger?.clearSnackBars();
+    // Clear decrypted content from memory before disposing
+    titleFieldController.text = '';
+    bodyFieldController.text = '';
+    _originalTitle = '';
+    _originalBody = '';
     titleFieldController.dispose();
     bodyFieldController.dispose();
     super.dispose();
@@ -196,6 +201,14 @@ class NoteEditState extends State<NoteEdit> {
     _scaffoldMessenger?.hideCurrentSnackBar();
   }
 
+  /// Public method to allow the parent widget (e.g. HomePage in landscape
+  /// mode) to trigger an auto-save before removing NoteEdit from the tree.
+  Future<void> saveIfNeeded() async {
+    if (_hasStartedEditing && _hasChanges()) {
+      await _autoSave();
+    }
+  }
+
   Future<int?> _autoSave() async {
     final currentTitle = titleFieldController.text.trim().isEmpty
         ? "Untitled Note"
@@ -232,13 +245,17 @@ class NoteEditState extends State<NoteEdit> {
     if (_hasStartedEditing && _hasChanges()) {
       int? newId = await _autoSave();
       if (mounted) {
-        setState(() {
-          this._forcePop = true;
-        });
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (isPopInvoked) {
-            Navigator.pop(context, newId);
-          } else {
+        if (isPopInvoked) {
+          // For system back button: pop directly after saving.
+          // Do NOT set _forcePop via setState first — that would change canPop
+          // to true and let the framework complete the back navigation without
+          // a result, before we can call Navigator.pop with the saved note id.
+          Navigator.pop(context, newId);
+        } else {
+          setState(() {
+            this._forcePop = true;
+          });
+          WidgetsBinding.instance.addPostFrameCallback((_) {
             if (isCancelAction) {
               if (widget.onNoteCancelled != null) {
                 widget.onNoteCancelled!();
@@ -253,24 +270,25 @@ class NoteEditState extends State<NoteEdit> {
                 Navigator.pop(context, newId);
               }
             }
-          }
-        });
+          });
+        }
       }
     } else {
-      setState(() {
-        this._forcePop = true;
-      });
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (isPopInvoked) {
-          Navigator.pop(context);
-        } else {
+      if (isPopInvoked) {
+        // For system back button with no changes: pop directly.
+        Navigator.pop(context);
+      } else {
+        setState(() {
+          this._forcePop = true;
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) {
           if (widget.onNoteCancelled != null) {
             widget.onNoteCancelled!();
           } else {
             Navigator.pop(context);
           }
-        }
-      });
+        });
+      }
     }
   }
 
@@ -280,6 +298,10 @@ class NoteEditState extends State<NoteEdit> {
       canPop: _forcePop || !_hasChanges(),
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
+        // In embedded/landscape mode (callbacks set), the parent HomePage
+        // handles the system back button via its own PopScope. Trying to
+        // handle it here would call Navigator.pop on the HomePage route.
+        if (widget.onNoteSaved != null) return;
         await _handleNavigateAway(isPopInvoked: true);
       },
       child: ScaffoldMessenger(

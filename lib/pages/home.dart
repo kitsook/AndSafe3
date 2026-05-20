@@ -76,11 +76,15 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
     return PopScope(
       canPop: !isEditing,
-      onPopInvokedWithResult: (didPop, result) {
+      onPopInvokedWithResult: (didPop, result) async {
         if (didPop) {
           return;
         }
         if (isEditing) {
+          // Auto-save NoteEdit's changes before clearing editing state.
+          // This must complete before setState, because setState triggers a
+          // rebuild that removes NoteEdit and reloads the note list from DB.
+          await _noteEditKey.currentState?.saveIfNeeded();
           setState(() {
             _selectedNoteId = null;
             _isCreatingNewNote = false;

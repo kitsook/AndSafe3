@@ -230,7 +230,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             content: TextField(
               controller: _controller,
               decoration: InputDecoration(
-                hintText:
+                labelText:
                     AppLocalizations.of(context)!.passwordToDecryptYourNotes,
                 suffixIcon: IconButton(
                   icon: Icon(Icons.arrow_right_alt_rounded),

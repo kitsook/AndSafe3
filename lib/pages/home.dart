@@ -117,14 +117,21 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                               _displayPasswordInputDialog(context),
                           onRefreshRequested: () =>
                               setState(() => _refreshCounter++),
-                          onNoteSelected: (id) => setState(() {
-                            _selectedNoteId = id;
-                            _isCreatingNewNote = false;
-                          }),
-                          onNewNoteRequested: () => setState(() {
-                            _selectedNoteId = null;
-                            _isCreatingNewNote = true;
-                          }),
+                          onNoteSelected: (id) async {
+                            await _noteEditKey.currentState?.saveIfNeeded();
+                            setState(() {
+                              _selectedNoteId = id;
+                              _isCreatingNewNote = false;
+                              _refreshCounter++;
+                            });
+                          },
+                          onNewNoteRequested: () async {
+                            await _noteEditKey.currentState?.saveIfNeeded();
+                            setState(() {
+                              _selectedNoteId = null;
+                              _isCreatingNewNote = true;
+                            });
+                          },
                         ),
                       ),
                     ),

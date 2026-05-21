@@ -99,6 +99,11 @@ class NoteEditState extends State<NoteEdit> {
   void didUpdateWidget(NoteEdit oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.id != oldWidget.id) {
+      // Clear editing state from the previous note before loading the new one.
+      _scaffoldMessenger?.clearSnackBars();
+      _isUndoSnackbarShowing = false;
+      _hasStartedEditing = false;
+      _forcePop = false;
       this._loadNoteFuture = _loadTheNote();
     }
   }
@@ -133,6 +138,9 @@ class NoteEditState extends State<NoteEdit> {
         return true;
       }
     } else {
+      titleFieldController.text = "";
+      bodyFieldController.text = "";
+      _selectedCategory = 0;
       _originalTitle = "";
       _originalBody = "";
       _originalCategory = 0;

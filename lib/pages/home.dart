@@ -434,6 +434,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                             msg: AppLocalizations.of(context)!.failedToExport);
                       }
                     },
+                    enabled: this._password != null,
                   ),
                   ListTile(
                     leading: Icon(Icons.exit_to_app_rounded),

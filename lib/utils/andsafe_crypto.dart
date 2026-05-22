@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:ffi';
 import 'dart:io';
 import 'dart:math';
-import 'dart:typed_data';
 
 import 'package:andsafe/models/note.dart';
 import 'package:andsafe/models/signature.dart' as sig;
@@ -133,7 +132,7 @@ Future<Uint8List> _encrypt(Map data) async {
   log.fine("Going to init cipher");
   cipher.init(true, params);
   log.fine("Going to do actual encryption");
-  final result = cipher.process(utf8.encode(plainText) as Uint8List);
+  final result = cipher.process(utf8.encode(plainText));
 
   // Zero out the isolate's copy of password and key
   password.fillRange(0, password.length, 0);

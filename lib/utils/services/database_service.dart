@@ -1,5 +1,3 @@
-import 'dart:collection';
-
 import 'package:andsafe/models/note.dart';
 import 'package:andsafe/models/signature.dart';
 import 'package:andsafe/utils/services/preferences_service.dart';
@@ -195,16 +193,15 @@ class DatabaseAdapter {
     }
   }
 
-  Future<Signature> getSignature() async {
+  Future<Signature?> getSignature() async {
     final Database db = await _getDatabase();
     List<Map> rows = await db.query(
       'signature',
       limit: 1,
     );
     return rows.length > 0
-        ? Future<Signature>.value(
-            Signature.fromMap(rows.first as Map<String, dynamic>))
-        : Future<Signature>.value(null);
+        ? Signature.fromMap(rows.first as Map<String, dynamic>)
+        : null;
   }
 
   Future<Set<int>> searchNotes(String query) async {

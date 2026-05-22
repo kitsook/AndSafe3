@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:andsafe/l10n/app_localizations.dart';
 import 'package:andsafe/utils/andsafe_crypto.dart';

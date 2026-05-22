@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:andsafe/l10n/app_localizations.dart';
 import 'package:andsafe/models/note.dart';
@@ -264,7 +263,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
       Uint8List? passwordBytes;
       try {
-        Signature signature = await db.adapter.getSignature();
+        Signature? signature = await db.adapter.getSignature();
         passwordBytes = Uint8List.fromList(utf8.encode(enteredPassword!));
         final signatureCheck = await verifySignature(signature, passwordBytes);
         if (signatureCheck) {
@@ -418,9 +417,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                           return;
                         }
 
+                        final signature = await db.adapter.getSignature();
+                        if (signature == null) {
+                          throw Exception('No signature found');
+                        }
                         await exportNotes(
                             exportFileName,
-                            await db.adapter.getSignature(),
+                            signature,
                             await db.adapter.getNotes());
                         displaySnackBarMsg(
                             context: context,

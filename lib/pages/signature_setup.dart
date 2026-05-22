@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -141,7 +140,7 @@ class _SignatureInputState extends State<SignatureSetupPage> {
               Navigator.pushReplacementNamed(context, 'home',
                   arguments: {'password': passwordBytes});
             } catch (e) {
-              passwordBytes?.fillRange(0, passwordBytes!.length, 0);
+              passwordBytes?.fillRange(0, passwordBytes.length, 0);
               log.fine("Failed to save the signature");
               log.fine(e.toString());
               displaySnackBarMsg(

@@ -165,9 +165,6 @@ class _ChangePasswordPageState extends State {
             Uint8List.fromList(utf8.encode(_newPassword1Controller.text));
 
         Signature? signature = await db.adapter.getSignature();
-        if (signature == null) {
-          throw Exception('No signature found');
-        }
         final signatureCheck =
             await verifySignature(signature, currentPassword);
         if (signatureCheck) {

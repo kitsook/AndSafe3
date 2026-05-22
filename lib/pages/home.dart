@@ -264,9 +264,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       Uint8List? passwordBytes;
       try {
         Signature? signature = await db.adapter.getSignature();
-        if (signature == null) {
-          throw Exception('No signature found');
-        }
         passwordBytes = Uint8List.fromList(utf8.encode(enteredPassword!));
         final signatureCheck = await verifySignature(signature, passwordBytes);
         if (signatureCheck) {

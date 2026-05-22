@@ -85,10 +85,11 @@ class _ChangePasswordPageState extends State {
     return TextFormField(
       autofocus: false,
       controller: _origPasswordController,
+      textInputAction: TextInputAction.next,
       decoration: new InputDecoration(
           contentPadding:
               EdgeInsets.only(left: 15, bottom: 11, top: 11, right: 15),
-          hintText: AppLocalizations.of(context)!.currentPassword),
+          labelText: AppLocalizations.of(context)!.currentPassword),
       // The validator receives the text that the user has entered.
       validator: (value) {
         if (value == null || value.isEmpty) {
@@ -106,10 +107,11 @@ class _ChangePasswordPageState extends State {
     return TextFormField(
       autofocus: false,
       controller: _newPassword1Controller,
+      textInputAction: TextInputAction.next,
       decoration: new InputDecoration(
           contentPadding:
               EdgeInsets.only(left: 15, bottom: 11, top: 11, right: 15),
-          hintText: AppLocalizations.of(context)!.newPassword),
+          labelText: AppLocalizations.of(context)!.newPassword),
       // The validator receives the text that the user has entered.
       validator: (value) {
         if (value == null || value.isEmpty) {
@@ -127,10 +129,12 @@ class _ChangePasswordPageState extends State {
     return TextFormField(
       autofocus: false,
       controller: _newPassword2Controller,
+      textInputAction: TextInputAction.done,
+      onFieldSubmitted: (_) => _submitForm(),
       decoration: new InputDecoration(
           contentPadding:
               EdgeInsets.only(left: 15, bottom: 11, top: 11, right: 15),
-          hintText: AppLocalizations.of(context)!.newPassword2),
+          labelText: AppLocalizations.of(context)!.newPassword2),
       // The validator receives the text that the user has entered.
       validator: (value) {
         if (value == null ||
@@ -146,74 +150,75 @@ class _ChangePasswordPageState extends State {
     );
   }
 
+  Future<void> _submitForm() async {
+    // validate form fields
+    if (_formKey.currentState!.validate()) {
+      setState(() {
+        this._isBusy = true;
+      });
+      Uint8List? currentPassword;
+      Uint8List? newPassword;
+      try {
+        currentPassword =
+            Uint8List.fromList(utf8.encode(_origPasswordController.text));
+        newPassword =
+            Uint8List.fromList(utf8.encode(_newPassword1Controller.text));
+
+        Signature signature = await db.adapter.getSignature();
+        final signatureCheck =
+            await verifySignature(signature, currentPassword);
+        if (signatureCheck) {
+          List<Note> allNotes = await db.adapter.getNotes();
+          this._totalToReEncrypt = allNotes.length;
+          this._currentlyReEncrypting = 0;
+
+          Signature newSignature = await createSignature(newPassword);
+
+          // get database transaction to update everything
+          Database database = await db.adapter.getDb();
+          await database.transaction((txn) async {
+            await db.adapter.generateSignature(newSignature, txn);
+            for (var note in allNotes) {
+              _progressStreamController.add(++this._currentlyReEncrypting);
+              Note newNote = await createNote(
+                  note.id,
+                  note.categoryId,
+                  note.title,
+                  await getNotePlainBody(note, currentPassword!),
+                  newPassword!,
+                  note.lastUpdate);
+              await db.adapter.updateNote(newNote, txn);
+            }
+          });
+
+          Navigator.pop(context, true);
+        } else {
+          // current password verification failed
+          displaySnackBarMsg(
+              context: context,
+              msg: AppLocalizations.of(context)!.failedToChangePassword);
+        }
+      } catch (e) {
+        log.fine("Failed to change password");
+        log.fine(e.toString());
+        displaySnackBarMsg(
+            context: context,
+            msg: AppLocalizations.of(context)!.failedToChangePassword);
+      } finally {
+        currentPassword?.fillRange(0, currentPassword.length, 0);
+        newPassword?.fillRange(0, newPassword.length, 0);
+        setState(() {
+          this._isBusy = false;
+        });
+      }
+    }
+  }
+
   Widget _buildActionButtons() {
     return Container(
       margin: const EdgeInsets.all(10.0),
       child: ElevatedButton(
-        onPressed: () async {
-          // validate form fields
-          if (_formKey.currentState!.validate()) {
-            setState(() {
-              this._isBusy = true;
-            });
-            Uint8List? currentPassword;
-            Uint8List? newPassword;
-            try {
-              currentPassword =
-                  Uint8List.fromList(utf8.encode(_origPasswordController.text));
-              newPassword =
-                  Uint8List.fromList(utf8.encode(_newPassword1Controller.text));
-
-              Signature signature = await db.adapter.getSignature();
-              final signatureCheck =
-                  await verifySignature(signature, currentPassword);
-              if (signatureCheck) {
-                List<Note> allNotes = await db.adapter.getNotes();
-                this._totalToReEncrypt = allNotes.length;
-                this._currentlyReEncrypting = 0;
-
-                Signature newSignature = await createSignature(newPassword);
-
-                // get database transaction to update everything
-                Database database = await db.adapter.getDb();
-                await database.transaction((txn) async {
-                  await db.adapter.generateSignature(newSignature, txn);
-                  for (var note in allNotes) {
-                    _progressStreamController
-                        .add(++this._currentlyReEncrypting);
-                    Note newNote = await createNote(
-                        note.id,
-                        note.categoryId,
-                        note.title,
-                        await getNotePlainBody(note, currentPassword!),
-                        newPassword!,
-                        note.lastUpdate);
-                    await db.adapter.updateNote(newNote, txn);
-                  }
-                });
-
-                Navigator.pop(context, true);
-              } else {
-                // current password verification failed
-                displaySnackBarMsg(
-                    context: context,
-                    msg: AppLocalizations.of(context)!.failedToChangePassword);
-              }
-            } catch (e) {
-              log.fine("Failed to change password");
-              log.fine(e.toString());
-              displaySnackBarMsg(
-                  context: context,
-                  msg: AppLocalizations.of(context)!.failedToChangePassword);
-            } finally {
-              currentPassword?.fillRange(0, currentPassword.length, 0);
-              newPassword?.fillRange(0, newPassword.length, 0);
-              setState(() {
-                this._isBusy = false;
-              });
-            }
-          }
-        },
+        onPressed: _submitForm,
         child: Text(AppLocalizations.of(context)!.changePasswordButton),
       ),
     );

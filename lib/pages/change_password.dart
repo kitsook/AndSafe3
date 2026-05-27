@@ -184,9 +184,11 @@ class _ChangePasswordPageState extends State {
                   note.id,
                   note.categoryId,
                   note.title,
-                  await getNotePlainBody(note, currentPassword!),
+                  await getNotePlainBody(note, currentPassword!,
+                      version: signature!.ver),
                   newPassword!,
-                  note.lastUpdate);
+                  version: currentSignatureVer,
+                  lastUpdated: note.lastUpdate);
               await db.adapter.updateNote(newNote, txn);
             }
           });

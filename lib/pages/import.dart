@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:andsafe/l10n/app_localizations.dart';
+import 'package:andsafe/models/signature.dart';
 import 'package:andsafe/utils/andsafe_crypto.dart';
 import 'package:andsafe/utils/logger.dart';
 import 'package:andsafe/utils/notification.dart';
@@ -244,14 +245,16 @@ class _ImportPageState extends State<_ImportPageInternal> {
                     await db.adapter.insertNote(importedNote);
                   } else {
                     final decryptedBody = await getNotePlainBody(
-                        importedNote, importPasswordBytes);
+                        importedNote, importPasswordBytes,
+                        version: imported.item1.ver);
                     final newNote = await createNote(
                         null,
                         importedNote.categoryId,
                         importedNote.title,
                         decryptedBody,
                         this._password,
-                        importedNote.lastUpdate);
+                        version: currentSignatureVer,
+                        lastUpdated: importedNote.lastUpdate);
                     await db.adapter.insertNote(newNote);
                   }
                 }

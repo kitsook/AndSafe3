@@ -188,6 +188,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       key: _noteEditKey,
       id: _selectedNoteId,
       password: _password!,
+      signatureVer: currentSignatureVer,
       onNoteSaved: (id) {
         setState(() {
           _selectedNoteId = id;
@@ -267,6 +268,25 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         passwordBytes = Uint8List.fromList(utf8.encode(enteredPassword!));
         final signatureCheck = await verifySignature(signature, passwordBytes);
         if (signatureCheck) {
+          // Check if migration is needed
+          if (signature != null && signature.ver < currentSignatureVer) {
+            try {
+              await migrateAllNotes(passwordBytes, signature.ver,
+                  (current, total) async {
+                // Migration progress — could update UI here
+              });
+              log.fine("Migration from ver=${signature.ver} to ver=$currentSignatureVer completed");
+            } catch (e) {
+              // Transaction rolled back by sqflite — DB is in original state
+              log.severe("Migration failed, DB rolled back");
+              log.severe(e.toString());
+              passwordBytes.fillRange(0, passwordBytes.length, 0);
+              displaySnackBarMsg(
+                  context: context,
+                  msg: AppLocalizations.of(context)!.failedToVerifyPassword);
+              continue; // re-enters the while(true) loop
+            }
+          }
           setState(() {
             this._password = passwordBytes;
             this._refreshCounter++;

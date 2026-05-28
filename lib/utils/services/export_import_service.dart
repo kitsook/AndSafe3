@@ -161,32 +161,32 @@ Signature _parseSignatureRow(XmlElement row) {
         .findElements('col')
         .where((node) => node.getAttribute('name') == '_id')
         .first
-        .value!),
+        .text),
     row
         .findElements('col')
         .where((node) => node.getAttribute('name') == 'plain')
         .first
-        .value!,
+        .text,
     row
         .findElements('col')
         .where((node) => node.getAttribute('name') == 'payload')
         .first
-        .value!,
+        .text,
     hex.decode(row
         .findElements('col')
         .where((node) => node.getAttribute('name') == 'salt')
         .first
-        .value!) as Uint8List,
+        .text) as Uint8List,
     hex.decode(row
         .findElements('col')
         .where((node) => node.getAttribute('name') == 'iv')
         .first
-        .value!) as Uint8List,
+        .text) as Uint8List,
     int.parse(row
         .findElements('col')
         .where((node) => node.getAttribute('name') == 'ver')
         .first
-        .value!),
+        .text),
   );
 }
 
@@ -196,36 +196,36 @@ Note _parseNoteRow(XmlElement row) {
         .findElements('col')
         .where((node) => node.getAttribute('name') == '_id')
         .first
-        .value!),
+        .text),
     int.parse(row
         .findElements('col')
         .where((node) => node.getAttribute('name') == 'cat_id')
         .first
-        .value!),
+        .text),
     row
         .findElements('col')
         .where((node) => node.getAttribute('name') == 'title')
         .first
-        .value!,
+        .text,
     row
         .findElements('col')
         .where((node) => node.getAttribute('name') == 'body')
         .first
-        .value!,
+        .text,
     hex.decode(row
         .findElements('col')
         .where((node) => node.getAttribute('name') == 'salt')
         .first
-        .value!) as Uint8List,
+        .text) as Uint8List,
     hex.decode(row
         .findElements('col')
         .where((node) => node.getAttribute('name') == 'iv')
         .first
-        .value!) as Uint8List,
+        .text) as Uint8List,
     DateTime.parse(row
         .findElements('col')
         .where((node) => node.getAttribute('name') == 'last_update')
         .first
-        .value!),
+        .text),
   );
 }

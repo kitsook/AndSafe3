@@ -58,5 +58,18 @@
   "textToBeEncrypted": "將會被加密的筆記",
   "failedToSaveTheNote": "未能儲存筆記",
   "saveButton": "儲存",
-  "exitApp": "退出"
+  "exitApp": "退出",
+  "upgradingData": "正在升級您的資料",
+  "doNotCloseApp": "請勿關閉應用程式",
+  "migratingNote": "正在遷移筆記 {current} / {total}",
+  "@migratingNote": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  }
 }

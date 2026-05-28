@@ -58,5 +58,18 @@
   "textToBeEncrypted": "Notes to be encrypted",
   "failedToSaveTheNote": "Failed to save the note",
   "saveButton": "Save",
-  "exitApp": "Exit"
+  "exitApp": "Exit",
+  "upgradingData": "Upgrading your data",
+  "doNotCloseApp": "Do not close the app",
+  "migratingNote": "Migrating note {current} of {total}",
+  "@migratingNote": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  }
 }

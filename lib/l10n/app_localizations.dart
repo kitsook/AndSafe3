@@ -458,6 +458,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Exit'**
   String get exitApp;
+
+  /// No description provided for @upgradingData.
+  ///
+  /// In en, this message translates to:
+  /// **'Upgrading your data'**
+  String get upgradingData;
+
+  /// No description provided for @doNotCloseApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Do not close the app'**
+  String get doNotCloseApp;
+
+  /// No description provided for @migratingNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Migrating note {current} of {total}'**
+  String migratingNote(int current, int total);
 }
 
 class _AppLocalizationsDelegate

@@ -188,6 +188,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       key: _noteEditKey,
       id: _selectedNoteId,
       password: _password!,
+      signatureVer: currentSignatureVer,
       onNoteSaved: (id) {
         setState(() {
           _selectedNoteId = id;
@@ -267,6 +268,57 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         passwordBytes = Uint8List.fromList(utf8.encode(enteredPassword!));
         final signatureCheck = await verifySignature(signature, passwordBytes);
         if (signatureCheck) {
+          // Check if migration is needed
+          if (signature != null && signature.ver < currentSignatureVer) {
+            // Show migration progress dialog
+            final migrationProgressNotifier = ValueNotifier<String>('');
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (dialogContext) {
+                return PopScope(
+                  canPop: false,
+                  child: AlertDialog(
+                    title: Text(AppLocalizations.of(context)!.upgradingData),
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        ValueListenableBuilder<String>(
+                          valueListenable: migrationProgressNotifier,
+                          builder: (context, value, _) => Text(value),
+                        ),
+                        SizedBox(height: 8),
+                        Text(AppLocalizations.of(context)!.doNotCloseApp),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+            try {
+              await migrateAllNotes(passwordBytes, signature.ver,
+                  (current, total) async {
+                migrationProgressNotifier.value =
+                    AppLocalizations.of(context)!.migratingNote(current, total);
+              });
+              log.fine("Migration from ver=${signature.ver} to ver=$currentSignatureVer completed");
+              Navigator.of(context).pop(); // dismiss migration dialog
+            } catch (e) {
+              Navigator.of(context).pop(); // dismiss migration dialog
+              // Transaction rolled back by sqflite — DB is in original state
+              log.severe("Migration failed, DB rolled back");
+              log.severe(e.toString());
+              passwordBytes.fillRange(0, passwordBytes.length, 0);
+              displaySnackBarMsg(
+                  context: context,
+                  msg: AppLocalizations.of(context)!.failedToVerifyPassword);
+              migrationProgressNotifier.dispose();
+              continue; // re-enters the while(true) loop
+            }
+            migrationProgressNotifier.dispose();
+          }
           setState(() {
             this._password = passwordBytes;
             this._refreshCounter++;

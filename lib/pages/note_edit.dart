@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:andsafe/l10n/app_localizations.dart';
 import 'package:andsafe/models/note.dart';
+import 'package:andsafe/models/signature.dart';
 import 'package:andsafe/utils/andsafe_crypto.dart';
 import 'package:andsafe/utils/category_icons.dart';
 import 'package:andsafe/utils/logger.dart';
@@ -20,10 +21,12 @@ class NoteEditPage extends StatelessWidget {
   Widget build(BuildContext context) {
     var arguments = ModalRoute.of(context)!.settings.arguments as Map;
     Uint8List password = arguments['password']!;
+    int signatureVer = arguments['signatureVer'] ?? currentSignatureVer;
     return NoteEdit(
       key: noteEditKey,
       id: int.tryParse(this.id),
       password: password,
+      signatureVer: signatureVer,
     );
   }
 }
@@ -31,6 +34,7 @@ class NoteEditPage extends StatelessWidget {
 class NoteEdit extends StatefulWidget {
   final int? id;
   final Uint8List password;
+  final int signatureVer;
   final ValueChanged<int?>? onNoteSaved;
   final ValueChanged<int?>? onNoteDeleted;
   final VoidCallback? onNoteCancelled;
@@ -39,6 +43,7 @@ class NoteEdit extends StatefulWidget {
       {Key? key,
       this.id,
       required this.password,
+      required this.signatureVer,
       this.onNoteSaved,
       this.onNoteDeleted,
       this.onNoteCancelled})
@@ -127,7 +132,8 @@ class NoteEditState extends State<NoteEdit> {
       if (note != null) {
         titleFieldController.text = note.title;
         bodyFieldController.text =
-            await getNotePlainBody(note, widget.password);
+            await getNotePlainBody(note, widget.password,
+                version: widget.signatureVer);
         _selectedCategory = note.categoryId;
 
         _originalTitle = note.title;
@@ -230,6 +236,7 @@ class NoteEditState extends State<NoteEdit> {
         currentTitle,
         currentBody,
         widget.password,
+        version: currentSignatureVer,
       );
       int? newId = widget.id;
       if (widget.id == null) {

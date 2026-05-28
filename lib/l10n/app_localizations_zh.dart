@@ -187,6 +187,17 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get exitApp => '退出';
+
+  @override
+  String get upgradingData => '正在升級您的資料';
+
+  @override
+  String get doNotCloseApp => '請勿關閉應用程式';
+
+  @override
+  String migratingNote(int current, int total) {
+    return '正在遷移筆記 $current / $total';
+  }
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -372,4 +383,15 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get exitApp => '退出';
+
+  @override
+  String get upgradingData => '正在升級您的資料';
+
+  @override
+  String get doNotCloseApp => '請勿關閉應用程式';
+
+  @override
+  String migratingNote(int current, int total) {
+    return '正在遷移筆記 $current / $total';
+  }
 }

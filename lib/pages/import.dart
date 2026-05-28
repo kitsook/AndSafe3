@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:andsafe/l10n/app_localizations.dart';
+import 'package:andsafe/models/signature.dart';
 import 'package:andsafe/utils/andsafe_crypto.dart';
 import 'package:andsafe/utils/logger.dart';
 import 'package:andsafe/utils/notification.dart';
@@ -238,20 +239,25 @@ class _ImportPageState extends State<_ImportPageInternal> {
                   // show progress on screen
                   _importProgressStreamController.add(++_currentlyImporting);
 
-                  if (listEquals(this._password, importPasswordBytes)) {
-                    // app password is same as import password. just import it with a new id
+                  if (listEquals(this._password, importPasswordBytes) &&
+                      imported.item1.ver == currentSignatureVer) {
+                    // app password is same as import password and same version.
+                    // just import it with a new id
                     importedNote.id = null;
                     await db.adapter.insertNote(importedNote);
                   } else {
+                    // different password or different version. re-encrypt
                     final decryptedBody = await getNotePlainBody(
-                        importedNote, importPasswordBytes);
+                        importedNote, importPasswordBytes,
+                        version: imported.item1.ver);
                     final newNote = await createNote(
                         null,
                         importedNote.categoryId,
                         importedNote.title,
                         decryptedBody,
                         this._password,
-                        importedNote.lastUpdate);
+                        version: currentSignatureVer,
+                        lastUpdated: importedNote.lastUpdate);
                     await db.adapter.insertNote(newNote);
                   }
                 }

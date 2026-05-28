@@ -190,4 +190,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get exitApp => 'Exit';
+
+  @override
+  String get upgradingData => 'Upgrading your data';
+
+  @override
+  String get doNotCloseApp => 'Do not close the app';
+
+  @override
+  String migratingNote(int current, int total) {
+    return 'Migrating note $current of $total';
+  }
 }

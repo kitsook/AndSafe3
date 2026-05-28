@@ -8,6 +8,7 @@ import 'package:andsafe/models/signature.dart' as sig;
 import 'package:andsafe/models/signature.dart';
 import 'package:andsafe/utils/helpers.dart';
 import 'package:andsafe/utils/logger.dart';
+import 'package:andsafe/utils/services/database_service.dart' as db;
 import 'package:ffi/ffi.dart';
 import 'package:flutter/foundation.dart';
 import 'package:pointycastle/api.dart';
@@ -17,7 +18,6 @@ const _scryptSaltLength = 32;
 const _aesIvLength = 16;
 const _aesKeyLength = 32;
 const _signatureLength = 32;
-const _scryptN = 16384;
 const _scryptR = 8;
 const _scryptP = 1;
 
@@ -33,6 +33,17 @@ int Function(
     Pointer<Uint8> buf,
     int bufLen)? _nativeScrypt;
 
+int _getScryptN(int version) {
+  switch (version) {
+    case 3:
+      return 16384;
+    case 4:
+      return 65536;
+    default:
+      throw ArgumentError('Unknown scrypt version: $version');
+  }
+}
+
 Future<sig.Signature> createSignature(Uint8List password) async {
   final Uint8List salt = _generateRandomBytes(_scryptSaltLength);
   final Uint8List iv = _generateRandomBytes(_aesIvLength);
@@ -44,6 +55,7 @@ Future<sig.Signature> createSignature(Uint8List password) async {
   data['password'] = password;
   data['salt'] = salt;
   data['iv'] = iv;
+  data['version'] = currentSignatureVer;
   final signature =
       bytesToHexString(await compute(_encrypt, data, debugLabel: "encrypt"));
   log.fine("Generated signature");
@@ -72,13 +84,14 @@ Future<bool> verifySignature(
   data['password'] = password;
   data['salt'] = signature.salt;
   data['iv'] = signature.iv;
+  data['version'] = signature.ver;
 
   return await _computeSignatureAndCompare(data);
 }
 
 Future<Note> createNote(
     int? id, int categoryId, String title, String plainText, Uint8List password,
-    [DateTime? lastUpdated]) async {
+    {required int version, DateTime? lastUpdated}) async {
   final Uint8List salt = _generateRandomBytes(_scryptSaltLength);
   final Uint8List iv = _generateRandomBytes(_aesIvLength);
 
@@ -88,6 +101,7 @@ Future<Note> createNote(
   data['password'] = password;
   data['salt'] = salt;
   data['iv'] = iv;
+  data['version'] = version;
   final ciphertext =
       bytesToHexString(await compute(_encrypt, data, debugLabel: "encrypt"));
   log.fine("Generated ciphertext");
@@ -99,17 +113,19 @@ Future<Note> createNote(
     ciphertext.toUpperCase(),
     salt,
     iv,
-    lastUpdated == null ? DateTime.now() : lastUpdated,
+    lastUpdated ?? DateTime.now(),
   );
 }
 
-Future<String> getNotePlainBody(Note note, Uint8List password) async {
+Future<String> getNotePlainBody(
+    Note note, Uint8List password, {required int version}) async {
   log.fine("Going to decrypt note body");
   Map data = Map();
   data['ciphertext'] = hexStringToBytes(note.body);
   data['password'] = password;
   data['salt'] = note.salt;
   data['iv'] = note.iv;
+  data['version'] = version;
 
   final String plainText = utf8.decode(
       await compute(_decrypt, data, debugLabel: "decrypt"),
@@ -123,8 +139,9 @@ Future<Uint8List> _encrypt(Map data) async {
   final Uint8List password = data['password'];
   final Uint8List salt = data['salt'];
   final Uint8List iv = data['iv'];
+  final int version = data['version'];
 
-  final Uint8List key = await _hashPassword(salt, password, _aesKeyLength);
+  final Uint8List key = await _hashPassword(salt, password, _aesKeyLength, version);
 
   CipherParameters params = PaddedBlockCipherParameters(
       ParametersWithIV<KeyParameter>(KeyParameter(key), iv), null);
@@ -146,8 +163,9 @@ Future<Uint8List> _decrypt(Map data) async {
   final Uint8List password = data['password'];
   final Uint8List salt = data['salt'];
   final Uint8List iv = data['iv'];
+  final int version = data['version'];
 
-  final Uint8List key = await _hashPassword(salt, password, _aesKeyLength);
+  final Uint8List key = await _hashPassword(salt, password, _aesKeyLength, version);
 
   CipherParameters params = PaddedBlockCipherParameters(
       ParametersWithIV<KeyParameter>(KeyParameter(key), iv), null);
@@ -168,6 +186,7 @@ Future<bool> _computeSignatureAndCompare(Map data) async {
   final Uint8List password = data['password'];
   final Uint8List salt = data['salt'];
   final Uint8List iv = data['iv'];
+  final int version = data['version'];
 
   try {
     if (payload.length == 0) {
@@ -179,6 +198,7 @@ Future<bool> _computeSignatureAndCompare(Map data) async {
     data['password'] = password;
     data['salt'] = salt;
     data['iv'] = iv;
+    data['version'] = version;
     final String signature =
         bytesToHexString(await compute(_encrypt, data, debugLabel: "encrypt"));
 
@@ -189,6 +209,47 @@ Future<bool> _computeSignatureAndCompare(Map data) async {
   }
 
   return false;
+}
+
+Future<void> migrateAllNotes(
+    Uint8List password,
+    int oldVersion,
+    Future<void> Function(int current, int total) onProgress) async {
+  final notes = await db.adapter.getNotes();
+  final total = notes.length;
+  final database = await db.adapter.getDb();
+
+  // Re-create signature with new scrypt params BEFORE the transaction.
+  // This runs scrypt on an isolate and must happen outside the txn.
+  sig.Signature newSignature = await createSignature(password);
+
+  // Single transaction: all note updates + signature replacement
+  await database.transaction((txn) async {
+    // Replace signature (re-encrypted with N=65536)
+    await db.adapter.generateSignature(newSignature, txn);
+
+    for (int i = 0; i < total; i++) {
+      await onProgress(i + 1, total);
+      final note = notes[i];
+
+      // Decrypt with old params — runs on isolate, outside txn
+      String plaintext =
+          await getNotePlainBody(note, password, version: oldVersion);
+
+      // Re-encrypt with new params — runs on isolate
+      Note newNote = await createNote(
+          note.id,
+          note.categoryId,
+          note.title,
+          plaintext,
+          password,
+          version: currentSignatureVer,
+          lastUpdated: note.lastUpdate);
+
+      // Save in place within transaction
+      await db.adapter.updateNote(newNote, txn);
+    }
+  });
 }
 
 Uint8List _generateRandomBytes(int numByte) {
@@ -206,7 +267,8 @@ String _generateRandomString(int length) {
 }
 
 Future<Uint8List> _hashPassword(
-    Uint8List salt, Uint8List password, int length) async {
+    Uint8List salt, Uint8List password, int length, int version) async {
+  final int n = _getScryptN(version);
   Pointer<Uint8>? saltBuffer;
   Pointer<Uint8>? passwordBuffer;
   Pointer<Uint8>? resultBuffer;
@@ -244,7 +306,7 @@ Future<Uint8List> _hashPassword(
     resultBuffer = calloc<Uint8>(length);
 
     int errorCode = _nativeScrypt!(passwordBuffer, password.length, saltBuffer,
-        salt.length, _scryptN, _scryptR, _scryptP, resultBuffer, length);
+        salt.length, n, _scryptR, _scryptP, resultBuffer, length);
     if (errorCode == 0) {
       return Uint8List.fromList(resultBuffer.asTypedList(length));
     }
@@ -269,7 +331,7 @@ Future<Uint8List> _hashPassword(
   // fallback to Dart version
   log.fine("Deriving key...");
   final kd = KeyDerivator('scrypt');
-  kd.init(ScryptParameters(_scryptN, _scryptR, _scryptP, length, salt));
+  kd.init(ScryptParameters(n, _scryptR, _scryptP, length, salt));
   final result = kd.process(password);
   password.fillRange(0, password.length, 0);
   log.fine("Key derived");

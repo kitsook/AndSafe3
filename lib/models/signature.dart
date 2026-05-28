@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-const currentSignatureVer = 3;
+const currentSignatureVer = 4;
 const signatureKeyCheckValueLengthInByte = 3;
 
 class Signature {

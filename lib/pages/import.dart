@@ -239,11 +239,14 @@ class _ImportPageState extends State<_ImportPageInternal> {
                   // show progress on screen
                   _importProgressStreamController.add(++_currentlyImporting);
 
-                  if (listEquals(this._password, importPasswordBytes)) {
-                    // app password is same as import password. just import it with a new id
+                  if (listEquals(this._password, importPasswordBytes) &&
+                      imported.item1.ver == currentSignatureVer) {
+                    // app password is same as import password and same version.
+                    // just import it with a new id
                     importedNote.id = null;
                     await db.adapter.insertNote(importedNote);
                   } else {
+                    // different password or different version. re-encrypt
                     final decryptedBody = await getNotePlainBody(
                         importedNote, importPasswordBytes,
                         version: imported.item1.ver);

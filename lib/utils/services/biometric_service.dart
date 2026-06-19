@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:andsafe/utils/logger.dart';
 import 'package:flutter/services.dart';
@@ -13,9 +14,10 @@ class BiometricService {
   factory BiometricService() => _instance;
   BiometricService._internal();
 
+  // local_auth is used only for availability checks
   final LocalAuthentication _localAuth = LocalAuthentication();
-  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage(
-    aOptions: AndroidOptions(),
+  final FlutterSecureStorage _secureStorage = FlutterSecureStorage(
+    aOptions: AndroidOptions.biometric(enforceBiometrics: true),
   );
 
   /// Check if the device has biometric hardware and enrolled biometrics.
@@ -41,8 +43,9 @@ class BiometricService {
     return await Prefs.getBiometricEnabled();
   }
 
-  /// Store the password in secure storage.
-  /// The password is base64-encoded for storage.
+  /// Store the password in biometric-protected secure storage.
+  /// The Keystore key is created with biometric binding, meaning
+  /// only biometric-authenticated operations can access the data.
   Future<bool> storePassword(Uint8List password) async {
     try {
       final String encoded = base64Encode(password);
@@ -58,25 +61,19 @@ class BiometricService {
     }
   }
 
-  /// Authenticate with biometrics and retrieve the stored password.
-  /// Returns null if authentication fails or no password is stored.
+  /// Retrieve the stored password with biometric authentication.
+  /// The OS biometric prompt is shown by flutter_secure_storage itself
+  /// because the Keystore key requires biometric auth to decrypt.
+  /// Returns null if authentication fails, is cancelled, or no password
+  /// is stored.
   Future<Uint8List?> authenticateAndRetrievePassword(
       String localizedReason) async {
     try {
-      final bool authenticated = await _localAuth.authenticate(
-        localizedReason: localizedReason,
-        options: const AuthenticationOptions(
-          stickyAuth: true,
-          biometricOnly: true,
-        ),
-      );
-
-      if (!authenticated) {
-        return null;
-      }
-
       final String? encoded = await _secureStorage.read(
         key: _secureStorageKey,
+        aOptions: AndroidOptions.biometric(
+          biometricPromptTitle: localizedReason,
+        ),
       );
 
       if (encoded == null) {

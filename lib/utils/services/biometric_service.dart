@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:andsafe/utils/logger.dart';
 import 'package:flutter/services.dart';

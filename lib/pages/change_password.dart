@@ -8,6 +8,7 @@ import 'package:andsafe/models/signature.dart';
 import 'package:andsafe/utils/andsafe_crypto.dart';
 import 'package:andsafe/utils/logger.dart';
 import 'package:andsafe/utils/notification.dart';
+import 'package:andsafe/utils/services/biometric_service.dart';
 import 'package:andsafe/utils/services/database_service.dart' as db;
 import 'package:flutter/material.dart';
 import 'package:loading_overlay/loading_overlay.dart';
@@ -194,6 +195,10 @@ class _ChangePasswordPageState extends State {
           });
 
           Navigator.pop(context, true);
+
+          // Clear biometric data so user is prompted to re-enroll
+          // with the new password on next login
+          BiometricService().clearStoredPassword();
         } else {
           // current password verification failed
           displaySnackBarMsg(

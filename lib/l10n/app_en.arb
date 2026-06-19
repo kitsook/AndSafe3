@@ -71,5 +71,15 @@
         "type": "int"
       }
     }
-  }
+  },
+  "fingerprintUnlockSetting": "Fingerprint unlock",
+  "enableFingerprintPrompt": "Enable fingerprint unlock?",
+  "enableFingerprintDescription": "Use your fingerprint to unlock AndSafe without typing your password each time.",
+  "enable": "Enable",
+  "notNow": "Not now",
+  "fingerprintReason": "Authenticate to unlock AndSafe",
+  "fingerprintEnabled": "Fingerprint unlock enabled",
+  "fingerprintDisabled": "Fingerprint unlock disabled",
+  "fingerprintNotAvailable": "Fingerprint not available on this device",
+  "fingerprintFailed": "Fingerprint authentication failed"
 }

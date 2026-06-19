@@ -10,6 +10,8 @@ const String _PREF_KEY_SORT = 'SelectedSorting';
 const String _PREF_KEY_SORT_ASCENDING = 'SelectedSortAscending';
 const String _PREF_KEY_THEME = 'SelectedTheme';
 const String _PREF_KEY_SWIPE_TO_DELETE = 'SwipeToDelete';
+const String _PREF_KEY_BIOMETRIC_ENABLED = 'BiometricEnabled';
+const String _PREF_KEY_BIOMETRIC_OFFERED = 'BiometricOffered';
 
 _PreferenceService _prefService = _PreferenceService();
 
@@ -67,6 +69,22 @@ class Prefs {
   static Future<void> setSwipeToDelete(bool swipeToDelete) async {
     await _prefService.setBool(_PREF_KEY_SWIPE_TO_DELETE, swipeToDelete);
   }
+
+  static Future<bool> getBiometricEnabled() async {
+    return await _prefService.getBoolDefault(_PREF_KEY_BIOMETRIC_ENABLED, false);
+  }
+
+  static Future<void> setBiometricEnabled(bool enabled) async {
+    await _prefService.setBool(_PREF_KEY_BIOMETRIC_ENABLED, enabled);
+  }
+
+  static Future<bool> getBiometricOffered() async {
+    return await _prefService.getBoolDefault(_PREF_KEY_BIOMETRIC_OFFERED, false);
+  }
+
+  static Future<void> setBiometricOffered(bool offered) async {
+    await _prefService.setBool(_PREF_KEY_BIOMETRIC_OFFERED, offered);
+  }
 }
 
 class _PreferenceService {
@@ -122,6 +140,15 @@ class _PreferenceService {
       return prefs.getBool(key) ?? true;
     } catch (e) {
       return true;
+    }
+  }
+
+  Future<bool> getBoolDefault(String key, bool defaultValue) async {
+    try {
+      SharedPreferences prefs = await this._prefs!;
+      return prefs.getBool(key) ?? defaultValue;
+    } catch (e) {
+      return defaultValue;
     }
   }
 

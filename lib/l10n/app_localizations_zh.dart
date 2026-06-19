@@ -198,6 +198,36 @@ class AppLocalizationsZh extends AppLocalizations {
   String migratingNote(int current, int total) {
     return '正在遷移筆記 $current / $total';
   }
+
+  @override
+  String get fingerprintUnlockSetting => '指紋解鎖';
+
+  @override
+  String get enableFingerprintPrompt => '啟用指紋解鎖？';
+
+  @override
+  String get enableFingerprintDescription => '使用指紋解鎖 AndSafe，無需每次輸入密碼。';
+
+  @override
+  String get enable => '啟用';
+
+  @override
+  String get notNow => '稍後';
+
+  @override
+  String get fingerprintReason => '驗證以解鎖 AndSafe';
+
+  @override
+  String get fingerprintEnabled => '已啟用指紋解鎖';
+
+  @override
+  String get fingerprintDisabled => '已停用指紋解鎖';
+
+  @override
+  String get fingerprintNotAvailable => '此裝置不支援指紋功能';
+
+  @override
+  String get fingerprintFailed => '指紋驗證失敗';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -394,4 +424,34 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String migratingNote(int current, int total) {
     return '正在遷移筆記 $current / $total';
   }
+
+  @override
+  String get fingerprintUnlockSetting => '指紋解鎖';
+
+  @override
+  String get enableFingerprintPrompt => '啟用指紋解鎖？';
+
+  @override
+  String get enableFingerprintDescription => '使用指紋解鎖 AndSafe，無需每次輸入密碼。';
+
+  @override
+  String get enable => '啟用';
+
+  @override
+  String get notNow => '稍後';
+
+  @override
+  String get fingerprintReason => '驗證以解鎖 AndSafe';
+
+  @override
+  String get fingerprintEnabled => '已啟用指紋解鎖';
+
+  @override
+  String get fingerprintDisabled => '已停用指紋解鎖';
+
+  @override
+  String get fingerprintNotAvailable => '此裝置不支援指紋功能';
+
+  @override
+  String get fingerprintFailed => '指紋驗證失敗';
 }

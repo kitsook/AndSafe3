@@ -201,4 +201,36 @@ class AppLocalizationsEn extends AppLocalizations {
   String migratingNote(int current, int total) {
     return 'Migrating note $current of $total';
   }
+
+  @override
+  String get fingerprintUnlockSetting => 'Fingerprint unlock';
+
+  @override
+  String get enableFingerprintPrompt => 'Enable fingerprint unlock?';
+
+  @override
+  String get enableFingerprintDescription =>
+      'Use your fingerprint to unlock AndSafe without typing your password each time.';
+
+  @override
+  String get enable => 'Enable';
+
+  @override
+  String get notNow => 'Not now';
+
+  @override
+  String get fingerprintReason => 'Authenticate to unlock AndSafe';
+
+  @override
+  String get fingerprintEnabled => 'Fingerprint unlock enabled';
+
+  @override
+  String get fingerprintDisabled => 'Fingerprint unlock disabled';
+
+  @override
+  String get fingerprintNotAvailable =>
+      'Fingerprint not available on this device';
+
+  @override
+  String get fingerprintFailed => 'Fingerprint authentication failed';
 }

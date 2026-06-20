@@ -71,5 +71,15 @@
         "type": "int"
       }
     }
-  }
+  },
+  "biometricUnlockSetting": "Biometric unlock",
+  "enableBiometricPrompt": "Enable biometric unlock?",
+  "enableBiometricDescription": "Use biometric authentication to unlock AndSafe without typing your password each time.",
+  "enable": "Enable",
+  "notNow": "Not now",
+  "biometricReason": "Authenticate to unlock AndSafe",
+  "biometricEnabled": "Biometric unlock enabled",
+  "biometricDisabled": "Biometric unlock disabled",
+  "biometricNotAvailable": "Biometric authentication not available on this device",
+  "biometricFailed": "Biometric authentication failed"
 }

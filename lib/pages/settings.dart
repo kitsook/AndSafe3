@@ -1,5 +1,9 @@
+import 'dart:typed_data';
+
 import 'package:andsafe/l10n/app_localizations.dart';
 import 'package:andsafe/utils/ThemeChanger.dart';
+import 'package:andsafe/utils/notification.dart';
+import 'package:andsafe/utils/services/biometric_service.dart';
 import 'package:andsafe/utils/services/preferences_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -15,11 +19,21 @@ class _ChangeSettingsPageState extends State {
   final _formKey = GlobalKey<FormState>();
   String _theme = PREF_THEME_SYSTEM;
   bool _swipeToDelete = true;
+  bool _biometricEnabled = false;
+  bool _biometricAvailable = false;
+  final BiometricService _biometricService = BiometricService();
+  Uint8List? _password;
 
   @override
   void initState() {
     super.initState();
     _loadPrefs();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final arguments = ModalRoute.of(context)?.settings.arguments as Map?;
+      if (arguments != null && arguments.containsKey('password')) {
+        _password = arguments['password'];
+      }
+    });
   }
 
   void _loadPrefs() {
@@ -27,6 +41,10 @@ class _ChangeSettingsPageState extends State {
         .then((value) => this._theme = value)
         .then((_) => Prefs.getSwipeToDelete())
         .then((value) => this._swipeToDelete = value)
+        .then((_) => Prefs.getBiometricEnabled())
+        .then((value) => this._biometricEnabled = value)
+        .then((_) => _biometricService.isBiometricAvailable())
+        .then((value) => this._biometricAvailable = value)
         .then((_) {
       setState(() {});
     });
@@ -52,6 +70,10 @@ class _ChangeSettingsPageState extends State {
                   Divider(height: 2),
                   _buildVerticalSpacing(),
                   _buildSwipeDeleteToogle(),
+                  _buildVerticalSpacing(),
+                  Divider(height: 2),
+                  _buildVerticalSpacing(),
+                  _buildBiometricToggle(),
                 ],
               ),
             ),
@@ -69,6 +91,7 @@ class _ChangeSettingsPageState extends State {
     return Column(
       children: [
         ListTile(
+          leading: Icon(Icons.palette_rounded),
           title: Text(AppLocalizations.of(context)!.themeSetting),
         ),
         new Container(
@@ -134,6 +157,7 @@ class _ChangeSettingsPageState extends State {
 
   Widget _buildSwipeDeleteToogle() {
     return ListTile(
+      leading: Icon(Icons.swipe_rounded),
       title: Text(AppLocalizations.of(context)!.swipeToDeleteSetting),
       trailing: Switch(
           value: _swipeToDelete,
@@ -144,6 +168,50 @@ class _ChangeSettingsPageState extends State {
               });
             });
           }),
+    );
+  }
+
+  Widget _buildBiometricToggle() {
+    return ListTile(
+      leading: Icon(Icons.fingerprint),
+      title: Text(AppLocalizations.of(context)!.biometricUnlockSetting),
+      trailing: Switch(
+        value: _biometricEnabled,
+        onChanged: _biometricAvailable && _password != null
+            ? (value) async {
+                if (value) {
+                  // Store the password in biometric-protected secure storage
+                  final bool stored =
+                      await _biometricService.storePassword(_password!);
+                  if (mounted) {
+                    displaySnackBarMsg(
+                      context: context,
+                      msg: stored
+                          ? AppLocalizations.of(context)!.biometricEnabled
+                          : AppLocalizations.of(context)!.biometricFailed,
+                    );
+                  }
+                  if (stored) {
+                    setState(() {
+                      _biometricEnabled = true;
+                    });
+                  }
+                } else {
+                  // Disabling: clear stored password
+                  await _biometricService.clearStoredPassword();
+                  if (mounted) {
+                    displaySnackBarMsg(
+                      context: context,
+                      msg: AppLocalizations.of(context)!.biometricDisabled,
+                    );
+                  }
+                  setState(() {
+                    _biometricEnabled = false;
+                  });
+                }
+              }
+            : null,
+      ),
     );
   }
 }

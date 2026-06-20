@@ -71,5 +71,15 @@
         "type": "int"
       }
     }
-  }
+  },
+  "biometricUnlockSetting": "生物辨識解鎖",
+  "enableBiometricPrompt": "啟用生物辨識解鎖？",
+  "enableBiometricDescription": "使用生物辨識解鎖 AndSafe，無需每次輸入密碼。",
+  "enable": "啟用",
+  "notNow": "稍後",
+  "biometricReason": "驗證以解鎖 AndSafe",
+  "biometricEnabled": "已啟用生物辨識解鎖",
+  "biometricDisabled": "已停用生物辨識解鎖",
+  "biometricNotAvailable": "此裝置不支援生物辨識功能",
+  "biometricFailed": "生物辨識驗證失敗"
 }

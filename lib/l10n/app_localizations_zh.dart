@@ -198,6 +198,36 @@ class AppLocalizationsZh extends AppLocalizations {
   String migratingNote(int current, int total) {
     return '正在遷移筆記 $current / $total';
   }
+
+  @override
+  String get biometricUnlockSetting => '生物辨識解鎖';
+
+  @override
+  String get enableBiometricPrompt => '啟用生物辨識解鎖？';
+
+  @override
+  String get enableBiometricDescription => '使用生物辨識解鎖 AndSafe，無需每次輸入密碼。';
+
+  @override
+  String get enable => '啟用';
+
+  @override
+  String get notNow => '稍後';
+
+  @override
+  String get biometricReason => '驗證以解鎖 AndSafe';
+
+  @override
+  String get biometricEnabled => '已啟用生物辨識解鎖';
+
+  @override
+  String get biometricDisabled => '已停用生物辨識解鎖';
+
+  @override
+  String get biometricNotAvailable => '此裝置不支援生物辨識功能';
+
+  @override
+  String get biometricFailed => '生物辨識驗證失敗';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -394,4 +424,34 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String migratingNote(int current, int total) {
     return '正在遷移筆記 $current / $total';
   }
+
+  @override
+  String get biometricUnlockSetting => '生物辨識解鎖';
+
+  @override
+  String get enableBiometricPrompt => '啟用生物辨識解鎖？';
+
+  @override
+  String get enableBiometricDescription => '使用生物辨識解鎖 AndSafe，無需每次輸入密碼。';
+
+  @override
+  String get enable => '啟用';
+
+  @override
+  String get notNow => '稍後';
+
+  @override
+  String get biometricReason => '驗證以解鎖 AndSafe';
+
+  @override
+  String get biometricEnabled => '已啟用生物辨識解鎖';
+
+  @override
+  String get biometricDisabled => '已停用生物辨識解鎖';
+
+  @override
+  String get biometricNotAvailable => '此裝置不支援生物辨識功能';
+
+  @override
+  String get biometricFailed => '生物辨識驗證失敗';
 }

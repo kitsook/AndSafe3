@@ -7,6 +7,7 @@ import 'package:andsafe/utils/andsafe_crypto.dart';
 import 'package:andsafe/utils/category_icons.dart';
 import 'package:andsafe/utils/logger.dart';
 import 'package:andsafe/utils/notification.dart';
+import 'package:andsafe/utils/services/biometric_service.dart';
 import 'package:andsafe/utils/services/database_service.dart' as db;
 import 'package:andsafe/utils/services/export_import_service.dart';
 import 'package:andsafe/utils/services/preferences_service.dart';
@@ -33,6 +34,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   final GlobalKey<NoteEditState> _noteEditKey = GlobalKey<NoteEditState>();
   final GlobalKey<NoteListState> _noteListKey = GlobalKey<NoteListState>();
+  final BiometricService _biometricService = BiometricService();
 
   @override
   void initState() {
@@ -44,8 +46,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         setState(() {
           _password = arguments['password'];
         });
+        // Password was passed from signature setup — offer biometric enrollment
+        _offerBiometricEnrollment(arguments['password']);
       } else {
-        _displayPasswordInputDialog(context);
+        _attemptBiometricUnlock(context);
       }
     });
   }
@@ -215,6 +219,151 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     );
   }
 
+  /// Attempt biometric unlock first, then fall back to password dialog.
+  Future<void> _attemptBiometricUnlock(BuildContext context) async {
+    final bool biometricEnabled = await _biometricService.isBiometricEnabled();
+    if (biometricEnabled) {
+      setState(() {
+        this._isBusy = true;
+      });
+
+      try {
+        final Uint8List? passwordBytes =
+            await _biometricService.authenticateAndRetrievePassword(
+          AppLocalizations.of(context)!.biometricReason,
+        );
+
+        if (passwordBytes != null) {
+          // Verify the retrieved password is still valid
+          Signature? signature = await db.adapter.getSignature();
+          final signatureCheck =
+              await verifySignature(signature, passwordBytes);
+          if (signatureCheck) {
+            // Check if migration is needed
+            if (signature != null && signature.ver < currentSignatureVer) {
+              await _performMigration(context, passwordBytes, signature.ver);
+            }
+            setState(() {
+              this._password = passwordBytes;
+              this._refreshCounter++;
+            });
+            return;
+          } else {
+            // Stored password no longer valid — clear biometric data
+            passwordBytes.fillRange(0, passwordBytes.length, 0);
+            await _biometricService.clearStoredPassword();
+          }
+        }
+      } catch (e) {
+        log.warning('Biometric unlock failed: $e');
+      } finally {
+        setState(() {
+          this._isBusy = false;
+        });
+      }
+    }
+
+    // Fall back to manual password entry
+    if (mounted) {
+      _displayPasswordInputDialog(context);
+    }
+  }
+
+  /// Show migration dialog and perform data migration.
+  Future<void> _performMigration(
+      BuildContext context, Uint8List passwordBytes, int oldVer) async {
+    final migrationProgressNotifier = ValueNotifier<String>('');
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return PopScope(
+          canPop: false,
+          child: AlertDialog(
+            title: Text(AppLocalizations.of(context)!.upgradingData),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                ValueListenableBuilder<String>(
+                  valueListenable: migrationProgressNotifier,
+                  builder: (context, value, _) => Text(value),
+                ),
+                SizedBox(height: 8),
+                Text(AppLocalizations.of(context)!.doNotCloseApp),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+    try {
+      await migrateAllNotes(passwordBytes, oldVer, (current, total) async {
+        migrationProgressNotifier.value =
+            AppLocalizations.of(context)!.migratingNote(current, total);
+      });
+      log.fine(
+          "Migration from ver=$oldVer to ver=$currentSignatureVer completed");
+      Navigator.of(context).pop(); // dismiss migration dialog
+    } catch (e) {
+      Navigator.of(context).pop(); // dismiss migration dialog
+      log.severe("Migration failed, DB rolled back");
+      log.severe(e.toString());
+      rethrow;
+    } finally {
+      migrationProgressNotifier.dispose();
+    }
+  }
+
+  /// Offer to enable biometric unlock if hardware is available and
+  /// we haven't already asked the user.
+  Future<void> _offerBiometricEnrollment(Uint8List password) async {
+    final bool alreadyOffered = await Prefs.getBiometricOffered();
+    if (alreadyOffered) return;
+
+    final bool available = await _biometricService.isBiometricAvailable();
+    if (!available) return;
+
+    await Prefs.setBiometricOffered(true);
+
+    if (!mounted) return;
+
+    final bool? shouldEnable = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          icon: Icon(Icons.fingerprint, size: 48),
+          title: Text(AppLocalizations.of(context)!.enableBiometricPrompt),
+          content:
+              Text(AppLocalizations.of(context)!.enableBiometricDescription),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(AppLocalizations.of(context)!.notNow),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(AppLocalizations.of(context)!.enable),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldEnable == true) {
+      final bool stored = await _biometricService.storePassword(password);
+      if (mounted) {
+        displaySnackBarMsg(
+          context: context,
+          msg: stored
+              ? AppLocalizations.of(context)!.biometricEnabled
+              : AppLocalizations.of(context)!.biometricFailed,
+        );
+      }
+    }
+  }
+
   Future<void> _displayPasswordInputDialog(BuildContext context) async {
     String? enteredPassword;
 
@@ -270,59 +419,22 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         if (signatureCheck) {
           // Check if migration is needed
           if (signature != null && signature.ver < currentSignatureVer) {
-            // Show migration progress dialog
-            final migrationProgressNotifier = ValueNotifier<String>('');
-            showDialog(
-              context: context,
-              barrierDismissible: false,
-              builder: (dialogContext) {
-                return PopScope(
-                  canPop: false,
-                  child: AlertDialog(
-                    title: Text(AppLocalizations.of(context)!.upgradingData),
-                    content: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        CircularProgressIndicator(),
-                        SizedBox(height: 16),
-                        ValueListenableBuilder<String>(
-                          valueListenable: migrationProgressNotifier,
-                          builder: (context, value, _) => Text(value),
-                        ),
-                        SizedBox(height: 8),
-                        Text(AppLocalizations.of(context)!.doNotCloseApp),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            );
             try {
-              await migrateAllNotes(passwordBytes, signature.ver,
-                  (current, total) async {
-                migrationProgressNotifier.value =
-                    AppLocalizations.of(context)!.migratingNote(current, total);
-              });
-              log.fine("Migration from ver=${signature.ver} to ver=$currentSignatureVer completed");
-              Navigator.of(context).pop(); // dismiss migration dialog
+              await _performMigration(context, passwordBytes, signature.ver);
             } catch (e) {
-              Navigator.of(context).pop(); // dismiss migration dialog
-              // Transaction rolled back by sqflite — DB is in original state
-              log.severe("Migration failed, DB rolled back");
-              log.severe(e.toString());
               passwordBytes.fillRange(0, passwordBytes.length, 0);
               displaySnackBarMsg(
                   context: context,
                   msg: AppLocalizations.of(context)!.failedToVerifyPassword);
-              migrationProgressNotifier.dispose();
               continue; // re-enters the while(true) loop
             }
-            migrationProgressNotifier.dispose();
           }
           setState(() {
             this._password = passwordBytes;
             this._refreshCounter++;
           });
+          // Offer biometric enrollment after successful manual login
+          _offerBiometricEnrollment(passwordBytes);
           return;
         } else {
           passwordBytes.fillRange(0, passwordBytes.length, 0);
@@ -388,7 +500,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     title: Text(AppLocalizations.of(context)!.settings),
                     onTap: () {
                       Navigator.of(context).pop();
-                      Navigator.pushNamed(context, 'settings/change')
+                      Navigator.pushNamed(context, 'settings/change',
+                              arguments: {'password': this._password})
                           .whenComplete(() {
                         setState(() {
                           _refreshCounter++;

@@ -201,4 +201,36 @@ class AppLocalizationsEn extends AppLocalizations {
   String migratingNote(int current, int total) {
     return 'Migrating note $current of $total';
   }
+
+  @override
+  String get biometricUnlockSetting => 'Biometric unlock';
+
+  @override
+  String get enableBiometricPrompt => 'Enable biometric unlock?';
+
+  @override
+  String get enableBiometricDescription =>
+      'Use biometric authentication to unlock AndSafe without typing your password each time.';
+
+  @override
+  String get enable => 'Enable';
+
+  @override
+  String get notNow => 'Not now';
+
+  @override
+  String get biometricReason => 'Authenticate to unlock AndSafe';
+
+  @override
+  String get biometricEnabled => 'Biometric unlock enabled';
+
+  @override
+  String get biometricDisabled => 'Biometric unlock disabled';
+
+  @override
+  String get biometricNotAvailable =>
+      'Biometric authentication not available on this device';
+
+  @override
+  String get biometricFailed => 'Biometric authentication failed';
 }

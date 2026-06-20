@@ -75,6 +75,10 @@ class BiometricService {
         key: _secureStorageKey,
         aOptions: AndroidOptions.biometric(
           biometricPromptTitle: localizedReason,
+          // commented out for now. current flutter_secure_storage has bug.
+          // otherwise if user cancel here, will stuck at wait loop.
+          // enforceBiometrics: true,
+          // biometricType: AndroidBiometricType.strongBiometricOnly,
         ),
       );
 

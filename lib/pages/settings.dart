@@ -91,6 +91,7 @@ class _ChangeSettingsPageState extends State {
     return Column(
       children: [
         ListTile(
+          leading: Icon(Icons.palette_rounded),
           title: Text(AppLocalizations.of(context)!.themeSetting),
         ),
         new Container(
@@ -156,6 +157,7 @@ class _ChangeSettingsPageState extends State {
 
   Widget _buildSwipeDeleteToogle() {
     return ListTile(
+      leading: Icon(Icons.swipe_rounded),
       title: Text(AppLocalizations.of(context)!.swipeToDeleteSetting),
       trailing: Switch(
           value: _swipeToDelete,
@@ -172,7 +174,7 @@ class _ChangeSettingsPageState extends State {
   Widget _buildBiometricToggle() {
     return ListTile(
       leading: Icon(Icons.fingerprint),
-      title: Text(AppLocalizations.of(context)!.fingerprintUnlockSetting),
+      title: Text(AppLocalizations.of(context)!.biometricUnlockSetting),
       trailing: Switch(
         value: _biometricEnabled,
         onChanged: _biometricAvailable && _password != null
@@ -185,8 +187,8 @@ class _ChangeSettingsPageState extends State {
                     displaySnackBarMsg(
                       context: context,
                       msg: stored
-                          ? AppLocalizations.of(context)!.fingerprintEnabled
-                          : AppLocalizations.of(context)!.fingerprintFailed,
+                          ? AppLocalizations.of(context)!.biometricEnabled
+                          : AppLocalizations.of(context)!.biometricFailed,
                     );
                   }
                   if (stored) {
@@ -200,7 +202,7 @@ class _ChangeSettingsPageState extends State {
                   if (mounted) {
                     displaySnackBarMsg(
                       context: context,
-                      msg: AppLocalizations.of(context)!.fingerprintDisabled,
+                      msg: AppLocalizations.of(context)!.biometricDisabled,
                     );
                   }
                   setState(() {

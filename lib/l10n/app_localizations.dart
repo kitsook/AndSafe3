@@ -477,23 +477,23 @@ abstract class AppLocalizations {
   /// **'Migrating note {current} of {total}'**
   String migratingNote(int current, int total);
 
-  /// No description provided for @fingerprintUnlockSetting.
+  /// No description provided for @biometricUnlockSetting.
   ///
   /// In en, this message translates to:
-  /// **'Fingerprint unlock'**
-  String get fingerprintUnlockSetting;
+  /// **'Biometric unlock'**
+  String get biometricUnlockSetting;
 
-  /// No description provided for @enableFingerprintPrompt.
+  /// No description provided for @enableBiometricPrompt.
   ///
   /// In en, this message translates to:
-  /// **'Enable fingerprint unlock?'**
-  String get enableFingerprintPrompt;
+  /// **'Enable biometric unlock?'**
+  String get enableBiometricPrompt;
 
-  /// No description provided for @enableFingerprintDescription.
+  /// No description provided for @enableBiometricDescription.
   ///
   /// In en, this message translates to:
-  /// **'Use your fingerprint to unlock AndSafe without typing your password each time.'**
-  String get enableFingerprintDescription;
+  /// **'Use biometric authentication to unlock AndSafe without typing your password each time.'**
+  String get enableBiometricDescription;
 
   /// No description provided for @enable.
   ///
@@ -507,35 +507,35 @@ abstract class AppLocalizations {
   /// **'Not now'**
   String get notNow;
 
-  /// No description provided for @fingerprintReason.
+  /// No description provided for @biometricReason.
   ///
   /// In en, this message translates to:
   /// **'Authenticate to unlock AndSafe'**
-  String get fingerprintReason;
+  String get biometricReason;
 
-  /// No description provided for @fingerprintEnabled.
+  /// No description provided for @biometricEnabled.
   ///
   /// In en, this message translates to:
-  /// **'Fingerprint unlock enabled'**
-  String get fingerprintEnabled;
+  /// **'Biometric unlock enabled'**
+  String get biometricEnabled;
 
-  /// No description provided for @fingerprintDisabled.
+  /// No description provided for @biometricDisabled.
   ///
   /// In en, this message translates to:
-  /// **'Fingerprint unlock disabled'**
-  String get fingerprintDisabled;
+  /// **'Biometric unlock disabled'**
+  String get biometricDisabled;
 
-  /// No description provided for @fingerprintNotAvailable.
+  /// No description provided for @biometricNotAvailable.
   ///
   /// In en, this message translates to:
-  /// **'Fingerprint not available on this device'**
-  String get fingerprintNotAvailable;
+  /// **'Biometric authentication not available on this device'**
+  String get biometricNotAvailable;
 
-  /// No description provided for @fingerprintFailed.
+  /// No description provided for @biometricFailed.
   ///
   /// In en, this message translates to:
-  /// **'Fingerprint authentication failed'**
-  String get fingerprintFailed;
+  /// **'Biometric authentication failed'**
+  String get biometricFailed;
 }
 
 class _AppLocalizationsDelegate

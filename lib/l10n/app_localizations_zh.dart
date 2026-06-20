@@ -200,13 +200,13 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get fingerprintUnlockSetting => '指紋解鎖';
+  String get biometricUnlockSetting => '生物辨識解鎖';
 
   @override
-  String get enableFingerprintPrompt => '啟用指紋解鎖？';
+  String get enableBiometricPrompt => '啟用生物辨識解鎖？';
 
   @override
-  String get enableFingerprintDescription => '使用指紋解鎖 AndSafe，無需每次輸入密碼。';
+  String get enableBiometricDescription => '使用生物辨識解鎖 AndSafe，無需每次輸入密碼。';
 
   @override
   String get enable => '啟用';
@@ -215,19 +215,19 @@ class AppLocalizationsZh extends AppLocalizations {
   String get notNow => '稍後';
 
   @override
-  String get fingerprintReason => '驗證以解鎖 AndSafe';
+  String get biometricReason => '驗證以解鎖 AndSafe';
 
   @override
-  String get fingerprintEnabled => '已啟用指紋解鎖';
+  String get biometricEnabled => '已啟用生物辨識解鎖';
 
   @override
-  String get fingerprintDisabled => '已停用指紋解鎖';
+  String get biometricDisabled => '已停用生物辨識解鎖';
 
   @override
-  String get fingerprintNotAvailable => '此裝置不支援指紋功能';
+  String get biometricNotAvailable => '此裝置不支援生物辨識功能';
 
   @override
-  String get fingerprintFailed => '指紋驗證失敗';
+  String get biometricFailed => '生物辨識驗證失敗';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -426,13 +426,13 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   }
 
   @override
-  String get fingerprintUnlockSetting => '指紋解鎖';
+  String get biometricUnlockSetting => '生物辨識解鎖';
 
   @override
-  String get enableFingerprintPrompt => '啟用指紋解鎖？';
+  String get enableBiometricPrompt => '啟用生物辨識解鎖？';
 
   @override
-  String get enableFingerprintDescription => '使用指紋解鎖 AndSafe，無需每次輸入密碼。';
+  String get enableBiometricDescription => '使用生物辨識解鎖 AndSafe，無需每次輸入密碼。';
 
   @override
   String get enable => '啟用';
@@ -441,17 +441,17 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get notNow => '稍後';
 
   @override
-  String get fingerprintReason => '驗證以解鎖 AndSafe';
+  String get biometricReason => '驗證以解鎖 AndSafe';
 
   @override
-  String get fingerprintEnabled => '已啟用指紋解鎖';
+  String get biometricEnabled => '已啟用生物辨識解鎖';
 
   @override
-  String get fingerprintDisabled => '已停用指紋解鎖';
+  String get biometricDisabled => '已停用生物辨識解鎖';
 
   @override
-  String get fingerprintNotAvailable => '此裝置不支援指紋功能';
+  String get biometricNotAvailable => '此裝置不支援生物辨識功能';
 
   @override
-  String get fingerprintFailed => '指紋驗證失敗';
+  String get biometricFailed => '生物辨識驗證失敗';
 }

@@ -230,7 +230,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       try {
         final Uint8List? passwordBytes =
             await _biometricService.authenticateAndRetrievePassword(
-          AppLocalizations.of(context)!.fingerprintReason,
+          AppLocalizations.of(context)!.biometricReason,
         );
 
         if (passwordBytes != null) {
@@ -334,9 +334,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       builder: (context) {
         return AlertDialog(
           icon: Icon(Icons.fingerprint, size: 48),
-          title: Text(AppLocalizations.of(context)!.enableFingerprintPrompt),
+          title: Text(AppLocalizations.of(context)!.enableBiometricPrompt),
           content:
-              Text(AppLocalizations.of(context)!.enableFingerprintDescription),
+              Text(AppLocalizations.of(context)!.enableBiometricDescription),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
@@ -357,8 +357,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         displaySnackBarMsg(
           context: context,
           msg: stored
-              ? AppLocalizations.of(context)!.fingerprintEnabled
-              : AppLocalizations.of(context)!.fingerprintFailed,
+              ? AppLocalizations.of(context)!.biometricEnabled
+              : AppLocalizations.of(context)!.biometricFailed,
         );
       }
     }

@@ -16,7 +16,10 @@ class BiometricService {
   // local_auth is used only for availability checks
   final LocalAuthentication _localAuth = LocalAuthentication();
   final FlutterSecureStorage _secureStorage = FlutterSecureStorage(
-    aOptions: AndroidOptions.biometric(enforceBiometrics: true),
+    aOptions: AndroidOptions.biometric(
+      enforceBiometrics: true,
+      biometricType: AndroidBiometricType.strongBiometricOnly,
+    ),
   );
 
   /// Check if the device has biometric hardware and enrolled biometrics.
@@ -84,7 +87,7 @@ class BiometricService {
       return Uint8List.fromList(base64Decode(encoded));
     } on PlatformException catch (e) {
       log.warning('Biometric authentication failed: $e');
-      // If the key was invalidated (e.g. user enrolled new fingerprints),
+      // If the key was invalidated (e.g. user enrolled new biometrics),
       // clear the stored data and disable biometric.
       if (e.code == 'KeyPermanentlyInvalidatedException' ||
           e.code == 'PermanentlyLockedOut') {

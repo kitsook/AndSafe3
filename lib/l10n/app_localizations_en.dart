@@ -203,14 +203,14 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get fingerprintUnlockSetting => 'Fingerprint unlock';
+  String get biometricUnlockSetting => 'Biometric unlock';
 
   @override
-  String get enableFingerprintPrompt => 'Enable fingerprint unlock?';
+  String get enableBiometricPrompt => 'Enable biometric unlock?';
 
   @override
-  String get enableFingerprintDescription =>
-      'Use your fingerprint to unlock AndSafe without typing your password each time.';
+  String get enableBiometricDescription =>
+      'Use biometric authentication to unlock AndSafe without typing your password each time.';
 
   @override
   String get enable => 'Enable';
@@ -219,18 +219,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notNow => 'Not now';
 
   @override
-  String get fingerprintReason => 'Authenticate to unlock AndSafe';
+  String get biometricReason => 'Authenticate to unlock AndSafe';
 
   @override
-  String get fingerprintEnabled => 'Fingerprint unlock enabled';
+  String get biometricEnabled => 'Biometric unlock enabled';
 
   @override
-  String get fingerprintDisabled => 'Fingerprint unlock disabled';
+  String get biometricDisabled => 'Biometric unlock disabled';
 
   @override
-  String get fingerprintNotAvailable =>
-      'Fingerprint not available on this device';
+  String get biometricNotAvailable =>
+      'Biometric authentication not available on this device';
 
   @override
-  String get fingerprintFailed => 'Fingerprint authentication failed';
+  String get biometricFailed => 'Biometric authentication failed';
 }

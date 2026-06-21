@@ -81,5 +81,6 @@
   "biometricEnabled": "已啟用生物辨識解鎖",
   "biometricDisabled": "已停用生物辨識解鎖",
   "biometricNotAvailable": "此裝置不支援生物辨識功能",
-  "biometricFailed": "生物辨識驗證失敗"
+  "biometricFailed": "生物辨識驗證失敗",
+  "unlockWithBiometrics": "使用生物辨識解鎖"
 }

@@ -228,6 +228,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get biometricFailed => '生物辨識驗證失敗';
+
+  @override
+  String get unlockWithBiometrics => '使用生物辨識解鎖';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -454,4 +457,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get biometricFailed => '生物辨識驗證失敗';
+
+  @override
+  String get unlockWithBiometrics => '使用生物辨識解鎖';
 }

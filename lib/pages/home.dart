@@ -366,6 +366,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   Future<void> _displayPasswordInputDialog(BuildContext context) async {
     String? enteredPassword;
+    final bool biometricEnabled = await _biometricService.isBiometricEnabled();
 
     while (true) {
       var _controller = TextEditingController();
@@ -376,28 +377,45 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         builder: (context) {
           return AlertDialog(
             title: Text(AppLocalizations.of(context)!.enterYourPassword),
-            content: TextField(
-              controller: _controller,
-              decoration: InputDecoration(
-                labelText:
-                    AppLocalizations.of(context)!.passwordToDecryptYourNotes,
-                suffixIcon: IconButton(
-                  icon: Icon(Icons.arrow_right_alt_rounded),
-                  onPressed: () {
-                    enteredPassword = _controller.text;
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: _controller,
+                  decoration: InputDecoration(
+                    labelText:
+                        AppLocalizations.of(context)!.passwordToDecryptYourNotes,
+                    suffixIcon: IconButton(
+                      icon: Icon(Icons.arrow_right_alt_rounded),
+                      onPressed: () {
+                        enteredPassword = _controller.text;
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ),
+                  obscureText: true,
+                  enableSuggestions: false,
+                  autocorrect: false,
+                  autofocus: true,
+                  textInputAction: TextInputAction.go,
+                  onSubmitted: (value) {
+                    enteredPassword = value;
                     Navigator.pop(context);
                   },
                 ),
-              ),
-              obscureText: true,
-              enableSuggestions: false,
-              autocorrect: false,
-              autofocus: true,
-              textInputAction: TextInputAction.go,
-              onSubmitted: (value) {
-                enteredPassword = value;
-                Navigator.pop(context);
-              },
+                if (biometricEnabled) ...[
+                  SizedBox(height: 16),
+                  FilledButton.icon(
+                    onPressed: () {
+                      enteredPassword = '__BIOMETRIC__';
+                      Navigator.pop(context);
+                    },
+                    icon: Icon(Icons.fingerprint),
+                    label: Text(
+                        AppLocalizations.of(context)!.unlockWithBiometrics),
+                  ),
+                ],
+              ],
             ),
           );
         },
@@ -405,6 +423,67 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
       if (enteredPassword == null) {
         return;
+      }
+
+      if (enteredPassword == '__BIOMETRIC__') {
+        setState(() {
+          this._isBusy = true;
+        });
+
+        try {
+          final Uint8List? passwordBytes =
+              await _biometricService.authenticateAndRetrievePassword(
+            AppLocalizations.of(context)!.biometricReason,
+          );
+
+          if (passwordBytes != null) {
+            Signature? signature = await db.adapter.getSignature();
+            final signatureCheck =
+                await verifySignature(signature, passwordBytes);
+            if (signatureCheck) {
+              if (signature != null && signature.ver < currentSignatureVer) {
+                try {
+                  await _performMigration(context, passwordBytes, signature.ver);
+                } catch (e) {
+                  passwordBytes.fillRange(0, passwordBytes.length, 0);
+                  displaySnackBarMsg(
+                      context: context,
+                      msg: AppLocalizations.of(context)!.failedToVerifyPassword);
+                  setState(() {
+                    this._isBusy = false;
+                  });
+                  continue;
+                }
+              }
+              setState(() {
+                this._password = passwordBytes;
+                this._refreshCounter++;
+              });
+              _offerBiometricEnrollment(passwordBytes);
+              return;
+            } else {
+              passwordBytes.fillRange(0, passwordBytes.length, 0);
+              await _biometricService.clearStoredPassword();
+              displaySnackBarMsg(
+                  context: context,
+                  msg: AppLocalizations.of(context)!.biometricFailed);
+            }
+          } else {
+            displaySnackBarMsg(
+                context: context,
+                msg: AppLocalizations.of(context)!.biometricFailed);
+          }
+        } catch (e) {
+          log.warning('Biometric unlock from password dialog failed: $e');
+          displaySnackBarMsg(
+              context: context,
+              msg: AppLocalizations.of(context)!.biometricFailed);
+        } finally {
+          setState(() {
+            this._isBusy = false;
+          });
+        }
+        continue;
       }
 
       setState(() {

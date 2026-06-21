@@ -366,11 +366,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   Future<void> _displayPasswordInputDialog(BuildContext context) async {
     String? enteredPassword;
+    bool? biometricPressed;
     final bool biometricEnabled = await _biometricService.isBiometricEnabled();
 
     while (true) {
       var _controller = TextEditingController();
       enteredPassword = null;
+      biometricPressed = null;
 
       await showDialog(
         context: context,
@@ -407,7 +409,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   SizedBox(height: 16),
                   FilledButton.icon(
                     onPressed: () {
-                      enteredPassword = '__BIOMETRIC__';
+                      biometricPressed = true;
                       Navigator.pop(context);
                     },
                     icon: Icon(Icons.fingerprint),
@@ -421,11 +423,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         },
       );
 
-      if (enteredPassword == null) {
+      if (enteredPassword == null && biometricPressed == null) {
         return;
       }
 
-      if (enteredPassword == '__BIOMETRIC__') {
+      if (biometricPressed == true) {
         setState(() {
           this._isBusy = true;
         });

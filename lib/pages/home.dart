@@ -234,25 +234,16 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         );
 
         if (passwordBytes != null) {
-          // Verify the retrieved password is still valid
-          Signature? signature = await db.adapter.getSignature();
-          final signatureCheck =
-              await verifySignature(signature, passwordBytes);
-          if (signatureCheck) {
-            // Check if migration is needed
-            if (signature != null && signature.ver < currentSignatureVer) {
-              await _performMigration(context, passwordBytes, signature.ver);
-            }
-            setState(() {
-              this._password = passwordBytes;
-              this._refreshCounter++;
-            });
-            return;
-          } else {
-            // Stored password no longer valid — clear biometric data
+          final success = await _unlockWithPassword(context, passwordBytes);
+          if (!success) {
             passwordBytes.fillRange(0, passwordBytes.length, 0);
             await _biometricService.clearStoredPassword();
           }
+          return;
+        } else {
+          // Stored password no longer valid — clear biometric data
+          passwordBytes!.fillRange(0, passwordBytes.length, 0);
+          await _biometricService.clearStoredPassword();
         }
       } catch (e) {
         log.warning('Biometric unlock failed: $e');
@@ -314,6 +305,26 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     } finally {
       migrationProgressNotifier.dispose();
     }
+  }
+
+  /// Verify password, perform migration if needed, set password and offer
+  /// biometric enrollment. Returns true on success.
+  Future<bool> _unlockWithPassword(
+      BuildContext context, Uint8List passwordBytes) async {
+    Signature? signature = await db.adapter.getSignature();
+    final signatureCheck = await verifySignature(signature, passwordBytes);
+    if (signatureCheck) {
+      if (signature != null && signature.ver < currentSignatureVer) {
+        await _performMigration(context, passwordBytes, signature.ver);
+      }
+      setState(() {
+        this._password = passwordBytes;
+        this._refreshCounter++;
+      });
+      _offerBiometricEnrollment(passwordBytes);
+      return true;
+    }
+    return false;
   }
 
   /// Offer to enable biometric unlock if hardware is available and
@@ -439,29 +450,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           );
 
           if (passwordBytes != null) {
-            Signature? signature = await db.adapter.getSignature();
-            final signatureCheck =
-                await verifySignature(signature, passwordBytes);
-            if (signatureCheck) {
-              if (signature != null && signature.ver < currentSignatureVer) {
-                try {
-                  await _performMigration(context, passwordBytes, signature.ver);
-                } catch (e) {
-                  passwordBytes.fillRange(0, passwordBytes.length, 0);
-                  displaySnackBarMsg(
-                      context: context,
-                      msg: AppLocalizations.of(context)!.failedToVerifyPassword);
-                  setState(() {
-                    this._isBusy = false;
-                  });
-                  continue;
-                }
-              }
-              setState(() {
-                this._password = passwordBytes;
-                this._refreshCounter++;
-              });
-              _offerBiometricEnrollment(passwordBytes);
+            final success = await _unlockWithPassword(context, passwordBytes);
+            if (success) {
               return;
             } else {
               passwordBytes.fillRange(0, passwordBytes.length, 0);
@@ -494,28 +484,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
       Uint8List? passwordBytes;
       try {
-        Signature? signature = await db.adapter.getSignature();
         passwordBytes = Uint8List.fromList(utf8.encode(enteredPassword!));
-        final signatureCheck = await verifySignature(signature, passwordBytes);
-        if (signatureCheck) {
-          // Check if migration is needed
-          if (signature != null && signature.ver < currentSignatureVer) {
-            try {
-              await _performMigration(context, passwordBytes, signature.ver);
-            } catch (e) {
-              passwordBytes.fillRange(0, passwordBytes.length, 0);
-              displaySnackBarMsg(
-                  context: context,
-                  msg: AppLocalizations.of(context)!.failedToVerifyPassword);
-              continue; // re-enters the while(true) loop
-            }
-          }
-          setState(() {
-            this._password = passwordBytes;
-            this._refreshCounter++;
-          });
-          // Offer biometric enrollment after successful manual login
-          _offerBiometricEnrollment(passwordBytes);
+        final success = await _unlockWithPassword(context, passwordBytes);
+        if (success) {
           return;
         } else {
           passwordBytes.fillRange(0, passwordBytes.length, 0);

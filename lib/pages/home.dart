@@ -234,25 +234,16 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         );
 
         if (passwordBytes != null) {
-          // Verify the retrieved password is still valid
-          Signature? signature = await db.adapter.getSignature();
-          final signatureCheck =
-              await verifySignature(signature, passwordBytes);
-          if (signatureCheck) {
-            // Check if migration is needed
-            if (signature != null && signature.ver < currentSignatureVer) {
-              await _performMigration(context, passwordBytes, signature.ver);
-            }
-            setState(() {
-              this._password = passwordBytes;
-              this._refreshCounter++;
-            });
-            return;
-          } else {
-            // Stored password no longer valid — clear biometric data
+          final success = await _unlockWithPassword(context, passwordBytes);
+          if (!success) {
             passwordBytes.fillRange(0, passwordBytes.length, 0);
             await _biometricService.clearStoredPassword();
           }
+          return;
+        } else {
+          // Stored password no longer valid — clear biometric data
+          passwordBytes!.fillRange(0, passwordBytes.length, 0);
+          await _biometricService.clearStoredPassword();
         }
       } catch (e) {
         log.warning('Biometric unlock failed: $e');
@@ -316,6 +307,26 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     }
   }
 
+  /// Verify password, perform migration if needed, set password and offer
+  /// biometric enrollment. Returns true on success.
+  Future<bool> _unlockWithPassword(
+      BuildContext context, Uint8List passwordBytes) async {
+    Signature? signature = await db.adapter.getSignature();
+    final signatureCheck = await verifySignature(signature, passwordBytes);
+    if (signatureCheck) {
+      if (signature != null && signature.ver < currentSignatureVer) {
+        await _performMigration(context, passwordBytes, signature.ver);
+      }
+      setState(() {
+        this._password = passwordBytes;
+        this._refreshCounter++;
+      });
+      _offerBiometricEnrollment(passwordBytes);
+      return true;
+    }
+    return false;
+  }
+
   /// Offer to enable biometric unlock if hardware is available and
   /// we haven't already asked the user.
   Future<void> _offerBiometricEnrollment(Uint8List password) async {
@@ -366,45 +377,105 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   Future<void> _displayPasswordInputDialog(BuildContext context) async {
     String? enteredPassword;
+    bool? biometricPressed;
+    final bool biometricEnabled = await _biometricService.isBiometricEnabled();
 
     while (true) {
       var _controller = TextEditingController();
       enteredPassword = null;
+      biometricPressed = null;
 
       await showDialog(
         context: context,
         builder: (context) {
           return AlertDialog(
             title: Text(AppLocalizations.of(context)!.enterYourPassword),
-            content: TextField(
-              controller: _controller,
-              decoration: InputDecoration(
-                labelText:
-                    AppLocalizations.of(context)!.passwordToDecryptYourNotes,
-                suffixIcon: IconButton(
-                  icon: Icon(Icons.arrow_right_alt_rounded),
-                  onPressed: () {
-                    enteredPassword = _controller.text;
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: _controller,
+                  decoration: InputDecoration(
+                    labelText:
+                        AppLocalizations.of(context)!.passwordToDecryptYourNotes,
+                    suffixIcon: IconButton(
+                      icon: Icon(Icons.arrow_right_alt_rounded),
+                      onPressed: () {
+                        enteredPassword = _controller.text;
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ),
+                  obscureText: true,
+                  enableSuggestions: false,
+                  autocorrect: false,
+                  autofocus: true,
+                  textInputAction: TextInputAction.go,
+                  onSubmitted: (value) {
+                    enteredPassword = value;
                     Navigator.pop(context);
                   },
                 ),
-              ),
-              obscureText: true,
-              enableSuggestions: false,
-              autocorrect: false,
-              autofocus: true,
-              textInputAction: TextInputAction.go,
-              onSubmitted: (value) {
-                enteredPassword = value;
-                Navigator.pop(context);
-              },
+                if (biometricEnabled) ...[
+                  SizedBox(height: 16),
+                  FilledButton.icon(
+                    onPressed: () {
+                      biometricPressed = true;
+                      Navigator.pop(context);
+                    },
+                    icon: Icon(Icons.fingerprint),
+                    label: Text(
+                        AppLocalizations.of(context)!.unlockWithBiometrics),
+                  ),
+                ],
+              ],
             ),
           );
         },
       );
 
-      if (enteredPassword == null) {
+      if (enteredPassword == null && biometricPressed == null) {
         return;
+      }
+
+      if (biometricPressed == true) {
+        setState(() {
+          this._isBusy = true;
+        });
+
+        try {
+          final Uint8List? passwordBytes =
+              await _biometricService.authenticateAndRetrievePassword(
+            AppLocalizations.of(context)!.biometricReason,
+          );
+
+          if (passwordBytes != null) {
+            final success = await _unlockWithPassword(context, passwordBytes);
+            if (success) {
+              return;
+            } else {
+              passwordBytes.fillRange(0, passwordBytes.length, 0);
+              await _biometricService.clearStoredPassword();
+              displaySnackBarMsg(
+                  context: context,
+                  msg: AppLocalizations.of(context)!.biometricFailed);
+            }
+          } else {
+            displaySnackBarMsg(
+                context: context,
+                msg: AppLocalizations.of(context)!.biometricFailed);
+          }
+        } catch (e) {
+          log.warning('Biometric unlock from password dialog failed: $e');
+          displaySnackBarMsg(
+              context: context,
+              msg: AppLocalizations.of(context)!.biometricFailed);
+        } finally {
+          setState(() {
+            this._isBusy = false;
+          });
+        }
+        continue;
       }
 
       setState(() {
@@ -413,28 +484,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
       Uint8List? passwordBytes;
       try {
-        Signature? signature = await db.adapter.getSignature();
         passwordBytes = Uint8List.fromList(utf8.encode(enteredPassword!));
-        final signatureCheck = await verifySignature(signature, passwordBytes);
-        if (signatureCheck) {
-          // Check if migration is needed
-          if (signature != null && signature.ver < currentSignatureVer) {
-            try {
-              await _performMigration(context, passwordBytes, signature.ver);
-            } catch (e) {
-              passwordBytes.fillRange(0, passwordBytes.length, 0);
-              displaySnackBarMsg(
-                  context: context,
-                  msg: AppLocalizations.of(context)!.failedToVerifyPassword);
-              continue; // re-enters the while(true) loop
-            }
-          }
-          setState(() {
-            this._password = passwordBytes;
-            this._refreshCounter++;
-          });
-          // Offer biometric enrollment after successful manual login
-          _offerBiometricEnrollment(passwordBytes);
+        final success = await _unlockWithPassword(context, passwordBytes);
+        if (success) {
           return;
         } else {
           passwordBytes.fillRange(0, passwordBytes.length, 0);

@@ -81,5 +81,6 @@
   "biometricEnabled": "Biometric unlock enabled",
   "biometricDisabled": "Biometric unlock disabled",
   "biometricNotAvailable": "Biometric authentication not available on this device",
-  "biometricFailed": "Biometric authentication failed"
+  "biometricFailed": "Biometric authentication failed",
+  "unlockWithBiometrics": "Unlock with biometrics"
 }

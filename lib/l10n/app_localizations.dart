@@ -536,6 +536,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Biometric authentication failed'**
   String get biometricFailed;
+
+  /// No description provided for @unlockWithBiometrics.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock with biometrics'**
+  String get unlockWithBiometrics;
 }
 
 class _AppLocalizationsDelegate

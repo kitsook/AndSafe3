@@ -194,11 +194,11 @@ class _ChangePasswordPageState extends State {
             }
           });
 
-          Navigator.pop(context, true);
-
           // Clear biometric data so user is prompted to re-enroll
           // with the new password on next login
-          BiometricService().clearStoredPassword();
+          await BiometricService().clearStoredPassword();
+
+          Navigator.pop(context, true);
         } else {
           // current password verification failed
           displaySnackBarMsg(

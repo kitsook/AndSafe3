@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:andsafe/l10n/app_localizations.dart';
 import 'package:andsafe/models/signature.dart';
 import 'package:andsafe/pages/home_drawer.dart';
@@ -296,7 +298,15 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         }
       },
       onExitApp: () {
-        SystemNavigator.pop();
+        if (_password != null) {
+          _password!.fillRange(0, _password!.length, 0);
+        }
+        _password = null;
+        // exit(0) terminates the process, destroying all in-memory state
+        // including the native flutter_secure_storage biometric session cache.
+        // This is intentional for a security app — "Exit" should guarantee
+        // that re-opening the app requires fresh biometric authentication.
+        exit(0);
       },
     );
   }

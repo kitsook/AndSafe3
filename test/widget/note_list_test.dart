@@ -12,52 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:andsafe/utils/services/preferences_service.dart';
 
 
-/// A mock DatabaseAdapter that returns in-memory data
-/// without connecting to a real SQLite database.
-class MockDatabaseAdapter extends db.DatabaseAdapter {
-  List<Note> notesToReturn = [];
-  Set<int> searchResultIds = {};
-  int nextInsertId = 100;
-  bool deleteNoteCalled = false;
-  int? deletedNoteId;
-
-  @override
-  Future<List<Note>> getNotes([Set<int> ids = const <int>{}]) async {
-    if (ids.isEmpty) return notesToReturn;
-    return notesToReturn.where((n) => ids.contains(n.id)).toList();
-  }
-
-  @override
-  Future<Set<int>> searchNotes(String query) async => searchResultIds;
-
-  @override
-  Future<Note?> getNote(int id) async =>
-      notesToReturn.cast<Note?>().firstWhere(
-            (n) => n?.id == id,
-            orElse: () => null,
-          );
-
-  @override
-  Future<void> deleteNote(int id) async {
-    deleteNoteCalled = true;
-    deletedNoteId = id;
-  }
-
-  @override
-  Future<int> insertNote(Note note) async => nextInsertId++;
-
-  @override
-  Future<void> updateNote(Note note, [dynamic txn]) async {}
-
-  @override
-  Future<void> generateSignature(Signature sig, [dynamic txn]) async {}
-
-  @override
-  Future<Signature?> getSignature() async => null;
-
-  @override
-  Future<bool> isPasswordSet() async => true;
-}
+import '../helpers/mock_database_adapter.dart';
 
 Note _createMockNote(int id, String title, {int categoryId = 0}) {
   return Note(
@@ -82,6 +37,7 @@ void main() {
     Prefs.resetForTesting();
     originalAdapter = db.adapter;
     mockAdapter = MockDatabaseAdapter();
+    mockAdapter.overrideIsPasswordSet = true;
     db.adapter = mockAdapter;
   });
 

@@ -10,50 +10,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// A mock DatabaseAdapter that overrides methods used by NoteEdit
-/// without connecting to a real database.
-class MockDatabaseAdapter extends db.DatabaseAdapter {
-  Note? noteToReturn;
-  int nextInsertId = 10;
-  bool insertNoteCalled = false;
-  bool updateNoteCalled = false;
-  Note? lastInsertedNote;
-  Note? lastUpdatedNote;
-
-  @override
-  Future<Note?> getNote(int id) async => noteToReturn;
-
-  @override
-  Future<int> insertNote(Note note) async {
-    insertNoteCalled = true;
-    lastInsertedNote = note;
-    return nextInsertId++;
-  }
-
-  @override
-  Future<void> updateNote(Note note, [dynamic txn]) async {
-    updateNoteCalled = true;
-    lastUpdatedNote = note;
-  }
-
-  @override
-  Future<void> deleteNote(int id) async {}
-
-  @override
-  Future<List<Note>> getNotes([Set<int> ids = const <int>{}]) async => [];
-
-  @override
-  Future<void> generateSignature(Signature sig, [dynamic txn]) async {}
-
-  @override
-  Future<Signature?> getSignature() async => null;
-
-  @override
-  Future<Set<int>> searchNotes(String query) async => {};
-
-  @override
-  Future<bool> isPasswordSet() async => true;
-}
+import '../helpers/mock_database_adapter.dart';
 
 void main() {
   late MockDatabaseAdapter mockAdapter;
@@ -63,6 +20,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     originalAdapter = db.adapter;
     mockAdapter = MockDatabaseAdapter();
+    mockAdapter.overrideIsPasswordSet = true;
     db.adapter = mockAdapter;
   });
 

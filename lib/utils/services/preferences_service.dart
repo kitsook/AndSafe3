@@ -16,6 +16,12 @@ const String _PREF_KEY_BIOMETRIC_OFFERED = 'BiometricOffered';
 _PreferenceService _prefService = _PreferenceService();
 
 class Prefs {
+  /// Resets the preference service singleton. Used to clear cached Future<SharedPreferences>
+  /// across test boundaries when mocks are re-registered.
+  static void resetForTesting() {
+    _prefService = _PreferenceService();
+  }
+
   static Future<String> getSortBy() async {
     String sortBy = await _prefService.getString(_PREF_KEY_SORT);
     if (sortBy == PREF_SORT_KEY_TITLE || sortBy == PREF_SORT_KEY_LAST_UPDATE) {

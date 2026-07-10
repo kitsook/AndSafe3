@@ -38,13 +38,13 @@ class MockDatabaseAdapter extends db.DatabaseAdapter {
           );
 
   @override
-  Future<void> deleteNote(int id) async {
+  Future<void> deleteNote(int id, [dynamic txn]) async {
     deleteNoteCalled = true;
     deletedNoteId = id;
   }
 
   @override
-  Future<int> insertNote(Note note) async => nextInsertId++;
+  Future<int> insertNote(Note note, [dynamic txn]) async => nextInsertId++;
 
   @override
   Future<void> updateNote(Note note, [dynamic txn]) async {}

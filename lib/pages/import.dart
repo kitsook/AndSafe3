@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:andsafe/l10n/app_localizations.dart';
+import 'package:andsafe/models/note.dart';
 import 'package:andsafe/models/signature.dart';
 import 'package:andsafe/utils/andsafe_crypto.dart';
 import 'package:andsafe/utils/logger.dart';
@@ -235,6 +236,8 @@ class _ImportPageState extends State<_ImportPageInternal> {
                 _totalToImport = imported.item2.length;
                 _currentlyImporting = 0;
 
+                // Prepare all notes first (crypto + progress reporting)
+                final notesToInsert = <Note>[];
                 for (var importedNote in imported.item2) {
                   // show progress on screen
                   _importProgressStreamController.add(++_currentlyImporting);
@@ -244,7 +247,7 @@ class _ImportPageState extends State<_ImportPageInternal> {
                     // app password is same as import password and same version.
                     // just import it with a new id
                     importedNote.id = null;
-                    await db.adapter.insertNote(importedNote);
+                    notesToInsert.add(importedNote);
                   } else {
                     // different password or different version. re-encrypt
                     final decryptedBody = await getNotePlainBody(
@@ -258,9 +261,17 @@ class _ImportPageState extends State<_ImportPageInternal> {
                         this._password,
                         version: currentSignatureVer,
                         lastUpdated: importedNote.lastUpdate);
-                    await db.adapter.insertNote(newNote);
+                    notesToInsert.add(newNote);
                   }
                 }
+
+                // Insert all notes atomically in a single transaction
+                final database = await db.adapter.getDb();
+                await database.transaction((txn) async {
+                  for (var note in notesToInsert) {
+                    await db.adapter.insertNote(note, txn);
+                  }
+                });
 
                 Navigator.pop(context);
               }

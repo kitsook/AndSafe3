@@ -137,9 +137,9 @@ class DatabaseAdapter {
 
     final String orderBy;
     if (sortBy == PREF_SORT_KEY_TITLE) {
-      orderBy = 'title COLLATE NOCASE ' + (sortAscending ? 'ASC' : 'DESC');
+      orderBy = 'title COLLATE NOCASE ${sortAscending ? 'ASC' : 'DESC'}, last_update DESC';
     } else {
-      orderBy = 'last_update ' + (sortAscending ? 'ASC' : 'DESC');
+      orderBy = 'last_update ${sortAscending ? 'ASC' : 'DESC'}, title COLLATE NOCASE ASC';
     }
 
     List<Map> rows = await db.query(

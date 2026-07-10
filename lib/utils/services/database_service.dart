@@ -67,61 +67,60 @@ class DatabaseAdapter {
     return _getDatabase();
   }
 
-  Future<int> insertNote(Note note) async {
-    final Database db = await _getDatabase();
-    int id = await db.insert(
+  Future<int> _insertNote(Note note, Transaction txn) async {
+    int id = await txn.insert(
       'notes',
       note.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
-    await db.insert('searchable', {'docid': id, 'title': note.title});
+    await txn.insert('searchable', {'docid': id, 'title': note.title});
     return id;
   }
 
-  Future<void> updateNote(Note note, [Transaction? txn]) async {
-    if (txn == null) {
-      final Database db = await _getDatabase();
-
-      await db.update(
-        'notes',
-        note.toMap(),
-        where: '_id=?',
-        whereArgs: [note.id],
-      );
-      await db.update(
-        'searchable',
-        {'title': note.title},
-        where: 'docid=?',
-        whereArgs: [note.id],
-      );
-    } else {
-      await txn.update(
-        'notes',
-        note.toMap(),
-        where: '_id=?',
-        whereArgs: [note.id],
-      );
-      await txn.update(
-        'searchable',
-        {'title': note.title},
-        where: 'docid=?',
-        whereArgs: [note.id],
-      );
-    }
+  Future<int> insertNote(Note note, [Transaction? txn]) async {
+    if (txn != null) return _insertNote(note, txn);
+    final Database db = await _getDatabase();
+    return await db.transaction<int>((txn) => _insertNote(note, txn));
   }
 
-  Future<void> deleteNote(int id) async {
+  Future<void> _updateNote(Note note, Transaction txn) async {
+    await txn.update(
+      'notes',
+      note.toMap(),
+      where: '_id=?',
+      whereArgs: [note.id],
+    );
+    await txn.update(
+      'searchable',
+      {'title': note.title},
+      where: 'docid=?',
+      whereArgs: [note.id],
+    );
+  }
+
+  Future<void> updateNote(Note note, [Transaction? txn]) async {
+    if (txn != null) return _updateNote(note, txn);
     final Database db = await _getDatabase();
-    await db.delete(
+    await db.transaction((txn) => _updateNote(note, txn));
+  }
+
+  Future<void> _deleteNote(int id, Transaction txn) async {
+    await txn.delete(
       'notes',
       where: '_id=?',
       whereArgs: [id],
     );
-    await db.delete(
+    await txn.delete(
       'searchable',
       where: 'docid=?',
       whereArgs: [id],
     );
+  }
+
+  Future<void> deleteNote(int id, [Transaction? txn]) async {
+    if (txn != null) return _deleteNote(id, txn);
+    final Database db = await _getDatabase();
+    await db.transaction((txn) => _deleteNote(id, txn));
   }
 
   Future<List<Note>> getNotes([Set<int> ids = const <int>{}]) async {
@@ -169,28 +168,21 @@ class DatabaseAdapter {
     return rows[0]['num'] as int == 1;
   }
 
-  Future<void> generateSignature(Signature sig, [Transaction? txn]) async {
-    if (txn == null) {
-      final Database db = await _getDatabase();
+  Future<void> _generateSignature(Signature sig, Transaction txn) async {
+    await txn.delete(
+      'signature',
+    );
+    await txn.insert(
+      'signature',
+      sig.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
 
-      await db.delete(
-        'signature',
-      );
-      await db.insert(
-        'signature',
-        sig.toMap(),
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
-    } else {
-      await txn.delete(
-        'signature',
-      );
-      await txn.insert(
-        'signature',
-        sig.toMap(),
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
-    }
+  Future<void> generateSignature(Signature sig, [Transaction? txn]) async {
+    if (txn != null) return _generateSignature(sig, txn);
+    final Database db = await _getDatabase();
+    await db.transaction((txn) => _generateSignature(sig, txn));
   }
 
   Future<Signature?> getSignature() async {

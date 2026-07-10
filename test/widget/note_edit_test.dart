@@ -24,7 +24,7 @@ class MockDatabaseAdapter extends db.DatabaseAdapter {
   Future<Note?> getNote(int id) async => noteToReturn;
 
   @override
-  Future<int> insertNote(Note note) async {
+  Future<int> insertNote(Note note, [dynamic txn]) async {
     insertNoteCalled = true;
     lastInsertedNote = note;
     return nextInsertId++;
@@ -37,7 +37,7 @@ class MockDatabaseAdapter extends db.DatabaseAdapter {
   }
 
   @override
-  Future<void> deleteNote(int id) async {}
+  Future<void> deleteNote(int id, [dynamic txn]) async {}
 
   @override
   Future<List<Note>> getNotes([Set<int> ids = const <int>{}]) async => [];

@@ -5,7 +5,7 @@ import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
 DatabaseAdapter adapter = DatabaseAdapter();
-const _currentDatabaseVersion = 2;
+const _currentDatabaseVersion = 3;
 
 class DatabaseAdapter {
   Future<Database>? _database;
@@ -32,12 +32,10 @@ class DatabaseAdapter {
 
         await db
             .execute('create virtual table searchable ' + 'using fts3 (title)');
-        // TODO the original plan was to create an index with upper(title)...
-        // but it is not supported by older version of android. so for now,
-        // we sort the list after retrieving the notes from db
-        // await db.execute('create index idx_notes_title on notes(title, _id)');
-        // await db.execute('create index idx_notes_last_update on notes(last_update, _id)');
-        await db.execute('create index idx_notes_title on notes(_id)');
+        await db.execute(
+            'create index idx_notes_title_nocase on notes(title collate nocase);');
+        await db.execute(
+            'create index idx_notes_last_update on notes(last_update);');
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion == 1) {
@@ -58,6 +56,16 @@ class DatabaseAdapter {
                   ');');
           await txn.update('signature', {'ver': currentSignatureVer});
         });
+
+        if (oldVersion < 3) {
+          await db.transaction((txn) async {
+            await txn.execute('drop index if exists idx_notes_title;');
+            await txn.execute(
+                'create index idx_notes_title_nocase on notes(title collate nocase);');
+            await txn.execute(
+                'create index idx_notes_last_update on notes(last_update);');
+          });
+        }
       },
       version: _currentDatabaseVersion,
     );

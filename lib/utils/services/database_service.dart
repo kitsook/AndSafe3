@@ -131,17 +131,14 @@ class DatabaseAdapter {
     await db.transaction((txn) => _deleteNote(id, txn));
   }
 
+  /// SQLite has a limit on the number of host parameters in a single statement
+  /// (SQLITE_MAX_VARIABLE_NUMBER, default 999). Batch queries accordingly.
+  static const _sqliteMaxVariableNumber = 999;
+
   Future<List<Note>> getNotes([Set<int> ids = const <int>{}]) async {
     final Database db = await _getDatabase();
     final String sortBy = await Prefs.getSortBy();
     final bool sortAscending = await Prefs.isSortAscending();
-
-    String? where;
-    List<dynamic>? whereArgs;
-    if (ids.isNotEmpty) {
-      where = '_id IN (${ids.map((_) => '?').join(',')})';
-      whereArgs = ids.toList();
-    }
 
     final String orderBy;
     if (sortBy == PREF_SORT_KEY_TITLE) {
@@ -150,16 +147,64 @@ class DatabaseAdapter {
       orderBy = 'last_update ${sortAscending ? 'ASC' : 'DESC'}, _id DESC';
     }
 
-    List<Map> rows = await db.query(
-      'notes',
-      where: where,
-      whereArgs: whereArgs,
-      orderBy: orderBy,
-    );
+    List<Map> rows;
+    if (ids.isEmpty) {
+      rows = await db.query(
+        'notes',
+        orderBy: orderBy,
+      );
+    } else if (ids.length <= _sqliteMaxVariableNumber) {
+      rows = await db.query(
+        'notes',
+        where: '_id IN (${ids.map((_) => '?').join(',')})',
+        whereArgs: ids.toList(),
+        orderBy: orderBy,
+      );
+    } else {
+      // Batch queries to stay within SQLite parameter limit
+      rows = [];
+      final idList = ids.toList();
+      for (var i = 0; i < idList.length; i += _sqliteMaxVariableNumber) {
+        final batch = idList.sublist(
+            i,
+            i + _sqliteMaxVariableNumber > idList.length
+                ? idList.length
+                : i + _sqliteMaxVariableNumber);
+        final batchRows = await db.query(
+          'notes',
+          where: '_id IN (${batch.map((_) => '?').join(',')})',
+          whereArgs: batch,
+          orderBy: orderBy,
+        );
+        rows.addAll(batchRows);
+      }
+    }
 
-    return rows
+    final notes = rows
         .map((row) => Note.fromMap(row as Map<String, dynamic>))
         .toList();
+
+    // Re-sort in Dart when results came from multiple batches, since each
+    // batch is individually sorted but the merged list is not.
+    if (ids.length > _sqliteMaxVariableNumber) {
+      notes.sort((a, b) {
+        if (sortBy == PREF_SORT_KEY_TITLE) {
+          final cmp = a.title.toUpperCase().compareTo(b.title.toUpperCase()) *
+              (sortAscending ? 1 : -1);
+          if (cmp != 0) return cmp;
+          final cmpDate = b.lastUpdate.compareTo(a.lastUpdate);
+          if (cmpDate != 0) return cmpDate;
+          return b.id!.compareTo(a.id!);
+        } else {
+          final cmp = a.lastUpdate.compareTo(b.lastUpdate) *
+              (sortAscending ? 1 : -1);
+          if (cmp != 0) return cmp;
+          return b.id!.compareTo(a.id!);
+        }
+      });
+    }
+
+    return notes;
   }
 
   Future<Note?> getNote(int id) async {

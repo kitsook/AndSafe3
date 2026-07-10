@@ -127,24 +127,31 @@ class DatabaseAdapter {
     final Database db = await _getDatabase();
     final String sortBy = await Prefs.getSortBy();
     final bool sortAscending = await Prefs.isSortAscending();
+
+    String? where;
+    List<dynamic>? whereArgs;
+    if (ids.isNotEmpty) {
+      where = '_id IN (${ids.map((_) => '?').join(',')})';
+      whereArgs = ids.toList();
+    }
+
+    final String orderBy;
+    if (sortBy == PREF_SORT_KEY_TITLE) {
+      orderBy = 'title COLLATE NOCASE ' + (sortAscending ? 'ASC' : 'DESC');
+    } else {
+      orderBy = 'last_update ' + (sortAscending ? 'ASC' : 'DESC');
+    }
+
     List<Map> rows = await db.query(
       'notes',
-      // orderBy: sortBy + (sortAscending? ' asc' : ' desc') + ', _id asc',
-      // orderBy: '_id asc',
+      where: where,
+      whereArgs: whereArgs,
+      orderBy: orderBy,
     );
-    // TODO sort and filter with sql query instead of doing it after retrieving all notes
-    final List<Note> notes = rows
-        .where((row) => ids.isEmpty || ids.contains(row['_id']))
+
+    return rows
         .map((row) => Note.fromMap(row as Map<String, dynamic>))
         .toList();
-    notes.sort((a, b) {
-      if (sortBy == PREF_SORT_KEY_TITLE) {
-        return a.title.toUpperCase().compareTo(b.title.toUpperCase()) *
-            (sortAscending ? 1 : -1);
-      }
-      return a.lastUpdate.compareTo(b.lastUpdate) * (sortAscending ? 1 : -1);
-    });
-    return notes;
   }
 
   Future<Note?> getNote(int id) async {

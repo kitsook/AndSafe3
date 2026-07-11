@@ -9,6 +9,7 @@ import 'package:andsafe/utils/services/database_service.dart' as db;
 import 'package:andsafe/utils/services/preferences_service.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 class NoteList extends StatefulWidget {
   final Uint8List? password;
@@ -153,17 +154,18 @@ class NoteListState extends State<NoteList> {
   }
 
   Future<int> _reloadNotes() async {
+    final adapter = Provider.of<db.DatabaseAdapter>(context, listen: false);
     if (_searchFieldController.text.isEmpty) {
-      _notes = await db.adapter.getNotes();
+      _notes = await adapter.getNotes();
       return _notes.length;
     }
     Set<int> ids =
-        await db.adapter.searchNotes(_searchFieldController.text + '*');
+        await adapter.searchNotes(_searchFieldController.text + '*');
     if (ids.isEmpty) {
       _notes = <Note>[];
       return 0;
     }
-    _notes = await db.adapter.getNotes(ids);
+    _notes = await adapter.getNotes(ids);
     return _notes.length;
   }
 
@@ -332,13 +334,14 @@ class NoteListState extends State<NoteList> {
   }
 
   Future<void> doDeleteNote(int noteId) async {
-    Note? justDeleted = await db.adapter.getNote(noteId);
+    final adapter = Provider.of<db.DatabaseAdapter>(context, listen: false);
+    Note? justDeleted = await adapter.getNote(noteId);
 
     SnackBarAction undoAction = SnackBarAction(
       label: AppLocalizations.of(context)!.undo,
       onPressed: () async {
         if (justDeleted != null) {
-          await db.adapter.insertNote(justDeleted);
+          await adapter.insertNote(justDeleted);
         }
         if (widget.onRefreshRequested != null) {
           widget.onRefreshRequested!();
@@ -348,7 +351,7 @@ class NoteListState extends State<NoteList> {
       },
     );
     if (widget.password != null) {
-      await db.adapter.deleteNote(noteId);
+      await adapter.deleteNote(noteId);
       if (widget.onRefreshRequested != null) {
         widget.onRefreshRequested!();
       } else {

@@ -10,6 +10,7 @@ import 'package:andsafe/utils/services/biometric_service.dart';
 import 'package:andsafe/utils/services/database_service.dart' as db;
 import 'package:andsafe/utils/services/preferences_service.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class AuthService {
   final BuildContext context;
@@ -96,7 +97,8 @@ class AuthService {
       },
     );
     try {
-      await migrateAllNotes(passwordBytes, oldVer, (current, total) async {
+      final adapter = Provider.of<db.DatabaseAdapter>(context, listen: false);
+      await migrateAllNotes(adapter, passwordBytes, oldVer, (current, total) async {
         migrationProgressNotifier.value =
             AppLocalizations.of(context)!.migratingNote(current, total);
       });
@@ -114,7 +116,8 @@ class AuthService {
   }
 
   Future<bool> unlockWithPassword(Uint8List passwordBytes) async {
-    Signature? signature = await db.adapter.getSignature();
+    final adapter = Provider.of<db.DatabaseAdapter>(context, listen: false);
+    Signature? signature = await adapter.getSignature();
     final signatureCheck = await verifySignature(signature, passwordBytes);
     if (signatureCheck) {
       if (signature != null && signature.ver < currentSignatureVer) {

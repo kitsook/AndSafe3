@@ -4,7 +4,6 @@ import 'package:andsafe/utils/services/preferences_service.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
-DatabaseAdapter adapter = DatabaseAdapter();
 const _currentDatabaseVersion = 3;
 
 class DatabaseAdapter {

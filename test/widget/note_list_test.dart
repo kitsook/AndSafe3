@@ -8,6 +8,7 @@ import 'package:andsafe/utils/services/database_service.dart' as db;
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:andsafe/utils/services/preferences_service.dart';
 
@@ -75,18 +76,14 @@ final _defaultPassword = Uint8List.fromList([1, 2, 3]);
 
 void main() {
   late MockDatabaseAdapter mockAdapter;
-  late db.DatabaseAdapter originalAdapter;
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});
     Prefs.resetForTesting();
-    originalAdapter = db.adapter;
     mockAdapter = MockDatabaseAdapter();
-    db.adapter = mockAdapter;
   });
 
   tearDown(() {
-    db.adapter = originalAdapter;
   });
 
   Widget buildTestApp({
@@ -99,21 +96,24 @@ void main() {
     VoidCallback? onRefreshRequested,
     int refreshCounter = 0,
   }) {
-    return MaterialApp(
-      localizationsDelegates: [
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-      ],
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: NoteList(
-        password: useNullPassword ? null : (password ?? _defaultPassword),
-        drawer: drawer,
-        onNoteSelected: onNoteSelected,
-        onNewNoteRequested: onNewNoteRequested,
-        onPasswordRequested: onPasswordRequested,
-        onRefreshRequested: onRefreshRequested,
-        refreshCounter: refreshCounter,
+    return Provider<db.DatabaseAdapter>.value(
+      value: mockAdapter,
+      child: MaterialApp(
+        localizationsDelegates: [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: NoteList(
+          password: useNullPassword ? null : (password ?? _defaultPassword),
+          drawer: drawer,
+          onNoteSelected: onNoteSelected,
+          onNewNoteRequested: onNewNoteRequested,
+          onPasswordRequested: onPasswordRequested,
+          onRefreshRequested: onRefreshRequested,
+          refreshCounter: refreshCounter,
+        ),
       ),
     );
   }

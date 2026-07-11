@@ -22,16 +22,18 @@ void main() async {
           ? ThemeMode.dark
           : ThemeMode.system;
 
-  bool isPasswordSet = await db.adapter.isPasswordSet();
+  final databaseAdapter = db.DatabaseAdapter();
+  bool isPasswordSet = await databaseAdapter.isPasswordSet();
 
-  runApp(MyApp(themeMode, isPasswordSet));
+  runApp(MyApp(themeMode, isPasswordSet, databaseAdapter));
 }
 
 class MyApp extends StatelessWidget {
   final ThemeMode themeMode;
   final bool isPasswordSet;
+  final db.DatabaseAdapter databaseAdapter;
 
-  MyApp(this.themeMode, this.isPasswordSet);
+  MyApp(this.themeMode, this.isPasswordSet, this.databaseAdapter);
 
   Future<void> _setFlagSecure() async {
     try {
@@ -46,8 +48,11 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     _setFlagSecure();
 
-    return ChangeNotifierProvider(
-      create: (_) => ThemeChanger(themeMode),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ThemeChanger(themeMode)),
+        Provider<db.DatabaseAdapter>.value(value: databaseAdapter),
+      ],
       child: Consumer<ThemeChanger>(builder: (_, themeChanger, __) {
         return MaterialApp(
           // debugShowCheckedModeBanner: false,

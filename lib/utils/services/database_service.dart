@@ -6,12 +6,10 @@ import 'package:sqflite/sqflite.dart';
 
 const _currentDatabaseVersion = 3;
 
-class DatabaseAdapter {
+class DatabaseHelper {
   Future<Database>? _database;
 
-  DatabaseAdapter() : super() {}
-
-  Future<Database> _getDatabase() {
+  Future<Database> getDatabase() {
     _database ??= _init();
     return _database!;
   }
@@ -45,16 +43,16 @@ class DatabaseAdapter {
             await txn.rawQuery(
                 'insert into searchable (docid, title) select _id, title from notes;');
           });
-        }
 
-        // update signature. use KCV concept and only store part of the encrypted payload
-        await db.transaction((txn) async {
-          await txn.rawQuery(
-              'update signature set payload = substr(payload, 1, ' +
-                  (signatureKeyCheckValueLengthInByte * 2).toString() +
-                  ');');
-          await txn.update('signature', {'ver': currentSignatureVer});
-        });
+          // update signature. use KCV concept and only store part of the encrypted payload
+          await db.transaction((txn) async {
+            await txn.rawQuery(
+                'update signature set payload = substr(payload, 1, ' +
+                    (signatureKeyCheckValueLengthInByte * 2).toString() +
+                    ');');
+            await txn.update('signature', {'ver': currentSignatureVer});
+          });
+        }
 
         if (oldVersion < 3) {
           await db.transaction((txn) async {
@@ -69,10 +67,14 @@ class DatabaseAdapter {
       version: _currentDatabaseVersion,
     );
   }
+}
 
-  Future<Database> getDb() {
-    return _getDatabase();
-  }
+class NoteService {
+  final Database db;
+
+  NoteService(this.db);
+
+  static const _sqliteMaxVariableNumber = 999;
 
   Future<int> _insertNote(Note note, Transaction txn) async {
     int id = await txn.insert(
@@ -86,7 +88,6 @@ class DatabaseAdapter {
 
   Future<int> insertNote(Note note, [Transaction? txn]) async {
     if (txn != null) return _insertNote(note, txn);
-    final Database db = await _getDatabase();
     return await db.transaction<int>((txn) => _insertNote(note, txn));
   }
 
@@ -107,7 +108,6 @@ class DatabaseAdapter {
 
   Future<void> updateNote(Note note, [Transaction? txn]) async {
     if (txn != null) return _updateNote(note, txn);
-    final Database db = await _getDatabase();
     await db.transaction((txn) => _updateNote(note, txn));
   }
 
@@ -126,16 +126,10 @@ class DatabaseAdapter {
 
   Future<void> deleteNote(int id, [Transaction? txn]) async {
     if (txn != null) return _deleteNote(id, txn);
-    final Database db = await _getDatabase();
     await db.transaction((txn) => _deleteNote(id, txn));
   }
 
-  /// SQLite has a limit on the number of host parameters in a single statement
-  /// (SQLITE_MAX_VARIABLE_NUMBER, default 999). Batch queries accordingly.
-  static const _sqliteMaxVariableNumber = 999;
-
   Future<List<Note>> getNotes([Set<int> ids = const <int>{}]) async {
-    final Database db = await _getDatabase();
     final String sortBy = await Prefs.getSortBy();
     final bool sortAscending = await Prefs.isSortAscending();
 
@@ -160,7 +154,6 @@ class DatabaseAdapter {
         orderBy: orderBy,
       );
     } else {
-      // Batch queries to stay within SQLite parameter limit
       rows = [];
       final idList = ids.toList();
       for (var i = 0; i < idList.length; i += _sqliteMaxVariableNumber) {
@@ -183,8 +176,6 @@ class DatabaseAdapter {
         .map((row) => Note.fromMap(row as Map<String, dynamic>))
         .toList();
 
-    // Re-sort in Dart when results came from multiple batches, since each
-    // batch is individually sorted but the merged list is not.
     if (ids.length > _sqliteMaxVariableNumber) {
       notes.sort((a, b) {
         if (sortBy == PREF_SORT_KEY_TITLE) {
@@ -207,7 +198,6 @@ class DatabaseAdapter {
   }
 
   Future<Note?> getNote(int id) async {
-    final Database db = await _getDatabase();
     List<Map> rows = await db.query(
       'notes',
       where: '_id=?',
@@ -218,8 +208,28 @@ class DatabaseAdapter {
         : null;
   }
 
+  Future<Set<int>> searchNotes(String query) async {
+    List<Map> rows = await db.query(
+      'searchable',
+      columns: [
+        'docid',
+        "matchinfo(searchable, 'pcx') as info",
+      ],
+      where: 'searchable match ?',
+      whereArgs: [query],
+    );
+    return rows.map((row) {
+      return row['docid'] as int;
+    }).toSet();
+  }
+}
+
+class SignatureService {
+  final Database db;
+
+  SignatureService(this.db);
+
   Future<bool> isPasswordSet() async {
-    final Database db = await _getDatabase();
     List<Map> rows = await db.rawQuery('SELECT COUNT(1) AS num FROM signature');
     if (rows.length == 0) {
       return false;
@@ -240,12 +250,10 @@ class DatabaseAdapter {
 
   Future<void> generateSignature(Signature sig, [Transaction? txn]) async {
     if (txn != null) return _generateSignature(sig, txn);
-    final Database db = await _getDatabase();
     await db.transaction((txn) => _generateSignature(sig, txn));
   }
 
   Future<Signature?> getSignature() async {
-    final Database db = await _getDatabase();
     List<Map> rows = await db.query(
       'signature',
       limit: 1,
@@ -253,22 +261,5 @@ class DatabaseAdapter {
     return rows.length > 0
         ? Signature.fromMap(rows.first as Map<String, dynamic>)
         : null;
-  }
-
-  Future<Set<int>> searchNotes(String query) async {
-    final Database db = await _getDatabase();
-    List<Map> rows = await db.query(
-      'searchable',
-      columns: [
-        'docid',
-        "matchinfo(searchable, 'pcx') as info",
-      ],
-      where: 'searchable match ?',
-      whereArgs: [query],
-    );
-    // TODO order by rank
-    return rows.map((row) {
-      return row['docid'] as int;
-    }).toSet();
   }
 }

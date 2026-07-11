@@ -166,21 +166,22 @@ class _ChangePasswordPageState extends State {
         newPassword =
             Uint8List.fromList(utf8.encode(_newPassword1Controller.text));
 
-        final adapter = Provider.of<db.DatabaseAdapter>(context, listen: false);
-        Signature? signature = await adapter.getSignature();
+        final noteService = Provider.of<db.NoteService>(context, listen: false);
+        final signatureService = Provider.of<db.SignatureService>(context, listen: false);
+        Signature? signature = await signatureService.getSignature();
         final signatureCheck =
             await verifySignature(signature, currentPassword);
         if (signatureCheck) {
-          List<Note> allNotes = await adapter.getNotes();
+          List<Note> allNotes = await noteService.getNotes();
           this._totalToReEncrypt = allNotes.length;
           this._currentlyReEncrypting = 0;
 
           Signature newSignature = await createSignature(newPassword);
 
           // get database transaction to update everything
-          Database database = await adapter.getDb();
+          Database database = noteService.db;
           await database.transaction((txn) async {
-            await adapter.generateSignature(newSignature, txn);
+            await signatureService.generateSignature(newSignature, txn);
             for (var note in allNotes) {
               _progressStreamController.add(++this._currentlyReEncrypting);
               Note newNote = await createNote(
@@ -192,7 +193,7 @@ class _ChangePasswordPageState extends State {
                   newPassword!,
                   version: currentSignatureVer,
                   lastUpdated: note.lastUpdate);
-              await adapter.updateNote(newNote, txn);
+              await noteService.updateNote(newNote, txn);
             }
           });
 

@@ -278,15 +278,16 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             return;
           }
 
-          final adapter = Provider.of<db.DatabaseAdapter>(context, listen: false);
-          final signature = await adapter.getSignature();
+          final noteService = Provider.of<db.NoteService>(context, listen: false);
+          final signatureService = Provider.of<db.SignatureService>(context, listen: false);
+          final signature = await signatureService.getSignature();
           if (signature == null) {
             throw Exception('No signature found');
           }
           await exportNotes(
               exportFileName,
               signature,
-              await adapter.getNotes());
+              await noteService.getNotes());
           displaySnackBarMsg(
               context: context,
               msg: AppLocalizations.of(context)!.exportedToFile +

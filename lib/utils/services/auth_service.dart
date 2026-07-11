@@ -97,8 +97,9 @@ class AuthService {
       },
     );
     try {
-      final adapter = Provider.of<db.DatabaseAdapter>(context, listen: false);
-      await migrateAllNotes(adapter, passwordBytes, oldVer, (current, total) async {
+      final noteService = Provider.of<db.NoteService>(context, listen: false);
+      final signatureService = Provider.of<db.SignatureService>(context, listen: false);
+      await migrateAllNotes(noteService, signatureService, passwordBytes, oldVer, (current, total) async {
         migrationProgressNotifier.value =
             AppLocalizations.of(context)!.migratingNote(current, total);
       });
@@ -116,8 +117,8 @@ class AuthService {
   }
 
   Future<bool> unlockWithPassword(Uint8List passwordBytes) async {
-    final adapter = Provider.of<db.DatabaseAdapter>(context, listen: false);
-    Signature? signature = await adapter.getSignature();
+    final signatureService = Provider.of<db.SignatureService>(context, listen: false);
+    Signature? signature = await signatureService.getSignature();
     final signatureCheck = await verifySignature(signature, passwordBytes);
     if (signatureCheck) {
       if (signature != null && signature.ver < currentSignatureVer) {

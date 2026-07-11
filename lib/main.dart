@@ -22,18 +22,22 @@ void main() async {
           ? ThemeMode.dark
           : ThemeMode.system;
 
-  final databaseAdapter = db.DatabaseAdapter();
-  bool isPasswordSet = await databaseAdapter.isPasswordSet();
+  final dbHelper = db.DatabaseHelper();
+  final database = await dbHelper.getDatabase();
+  final noteService = db.NoteService(database);
+  final signatureService = db.SignatureService(database);
+  bool isPasswordSet = await signatureService.isPasswordSet();
 
-  runApp(MyApp(themeMode, isPasswordSet, databaseAdapter));
+  runApp(MyApp(themeMode, isPasswordSet, noteService, signatureService));
 }
 
 class MyApp extends StatelessWidget {
   final ThemeMode themeMode;
   final bool isPasswordSet;
-  final db.DatabaseAdapter databaseAdapter;
+  final db.NoteService noteService;
+  final db.SignatureService signatureService;
 
-  MyApp(this.themeMode, this.isPasswordSet, this.databaseAdapter);
+  MyApp(this.themeMode, this.isPasswordSet, this.noteService, this.signatureService);
 
   Future<void> _setFlagSecure() async {
     try {
@@ -51,7 +55,8 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeChanger(themeMode)),
-        Provider<db.DatabaseAdapter>.value(value: databaseAdapter),
+        Provider<db.NoteService>.value(value: noteService),
+        Provider<db.SignatureService>.value(value: signatureService),
       ],
       child: Consumer<ThemeChanger>(builder: (_, themeChanger, __) {
         return MaterialApp(

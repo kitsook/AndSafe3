@@ -267,11 +267,11 @@ class _ImportPageState extends State<_ImportPageInternal> {
                 }
 
                 // Insert all notes atomically in a single transaction
-                final adapter = Provider.of<db.DatabaseAdapter>(context, listen: false);
-                final database = await adapter.getDb();
+                final noteService = Provider.of<db.NoteService>(context, listen: false);
+                final database = noteService.db;
                 await database.transaction((txn) async {
                   for (var note in notesToInsert) {
-                    await adapter.insertNote(note, txn);
+                    await noteService.insertNote(note, txn);
                   }
                 });
 

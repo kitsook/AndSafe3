@@ -135,8 +135,8 @@ class _SignatureInputState extends State<SignatureSetupPage> {
               passwordBytes =
                   Uint8List.fromList(utf8.encode(_password1Controller.text));
               Signature signature = await createSignature(passwordBytes);
-              final adapter = Provider.of<db.DatabaseAdapter>(context, listen: false);
-              await adapter.generateSignature(signature);
+              final signatureService = Provider.of<db.SignatureService>(context, listen: false);
+              await signatureService.generateSignature(signature);
 
               // signature set. proceed to load list
               Navigator.pushReplacementNamed(context, 'home',

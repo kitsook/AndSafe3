@@ -10,17 +10,23 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sqflite/sqflite.dart';
 import 'package:andsafe/utils/services/preferences_service.dart';
 
 
-/// A mock DatabaseAdapter that returns in-memory data
-/// without connecting to a real SQLite database.
-class MockDatabaseAdapter extends db.DatabaseAdapter {
+class MockDatabase implements Database {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
+}
+
+class MockNoteService extends db.NoteService {
   List<Note> notesToReturn = [];
   Set<int> searchResultIds = {};
   int nextInsertId = 100;
   bool deleteNoteCalled = false;
   int? deletedNoteId;
+
+  MockNoteService() : super(MockDatabase());
 
   @override
   Future<List<Note>> getNotes([Set<int> ids = const <int>{}]) async {
@@ -49,15 +55,6 @@ class MockDatabaseAdapter extends db.DatabaseAdapter {
 
   @override
   Future<void> updateNote(Note note, [dynamic txn]) async {}
-
-  @override
-  Future<void> generateSignature(Signature sig, [dynamic txn]) async {}
-
-  @override
-  Future<Signature?> getSignature() async => null;
-
-  @override
-  Future<bool> isPasswordSet() async => true;
 }
 
 Note _createMockNote(int id, String title, {int categoryId = 0}) {
@@ -75,12 +72,12 @@ Note _createMockNote(int id, String title, {int categoryId = 0}) {
 final _defaultPassword = Uint8List.fromList([1, 2, 3]);
 
 void main() {
-  late MockDatabaseAdapter mockAdapter;
+  late MockNoteService mockAdapter;
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});
     Prefs.resetForTesting();
-    mockAdapter = MockDatabaseAdapter();
+    mockAdapter = MockNoteService();
   });
 
   tearDown(() {
@@ -96,7 +93,7 @@ void main() {
     VoidCallback? onRefreshRequested,
     int refreshCounter = 0,
   }) {
-    return Provider<db.DatabaseAdapter>.value(
+    return Provider<db.NoteService>.value(
       value: mockAdapter,
       child: MaterialApp(
         localizationsDelegates: [

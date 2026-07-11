@@ -129,8 +129,8 @@ class NoteEditState extends State<NoteEdit> {
 
   Future<bool> _loadTheNote() async {
     if (widget.id != null) {
-      final adapter = Provider.of<db.DatabaseAdapter>(context, listen: false);
-      Note? note = await adapter.getNote(widget.id!);
+      final noteService = Provider.of<db.NoteService>(context, listen: false);
+      Note? note = await noteService.getNote(widget.id!);
       if (note != null) {
         titleFieldController.text = note.title;
         bodyFieldController.text =
@@ -240,12 +240,12 @@ class NoteEditState extends State<NoteEdit> {
         widget.password,
         version: currentSignatureVer,
       );
-      final adapter = Provider.of<db.DatabaseAdapter>(context, listen: false);
+      final noteService = Provider.of<db.NoteService>(context, listen: false);
       int? newId = widget.id;
       if (widget.id == null) {
-        newId = await adapter.insertNote(theNote);
+        newId = await noteService.insertNote(theNote);
       } else {
-        await adapter.updateNote(theNote);
+        await noteService.updateNote(theNote);
       }
       return newId;
     } catch (e) {

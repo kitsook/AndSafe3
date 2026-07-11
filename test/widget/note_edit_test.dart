@@ -8,6 +8,7 @@ import 'package:andsafe/utils/services/database_service.dart' as db;
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// A mock DatabaseAdapter that overrides methods used by NoteEdit
@@ -57,17 +58,13 @@ class MockDatabaseAdapter extends db.DatabaseAdapter {
 
 void main() {
   late MockDatabaseAdapter mockAdapter;
-  late db.DatabaseAdapter originalAdapter;
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});
-    originalAdapter = db.adapter;
     mockAdapter = MockDatabaseAdapter();
-    db.adapter = mockAdapter;
   });
 
   tearDown(() {
-    db.adapter = originalAdapter;
   });
 
   Widget buildTestApp({
@@ -78,20 +75,23 @@ void main() {
     ValueChanged<int?>? onNoteDeleted,
     VoidCallback? onNoteCancelled,
   }) {
-    return MaterialApp(
-      localizationsDelegates: [
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-      ],
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: NoteEdit(
-        id: noteId,
-        password: password ?? Uint8List.fromList([1, 2, 3, 4]),
-        signatureVer: signatureVer,
-        onNoteSaved: onNoteSaved,
-        onNoteDeleted: onNoteDeleted,
-        onNoteCancelled: onNoteCancelled,
+    return Provider<db.DatabaseAdapter>.value(
+      value: mockAdapter,
+      child: MaterialApp(
+        localizationsDelegates: [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: NoteEdit(
+          id: noteId,
+          password: password ?? Uint8List.fromList([1, 2, 3, 4]),
+          signatureVer: signatureVer,
+          onNoteSaved: onNoteSaved,
+          onNoteDeleted: onNoteDeleted,
+          onNoteCancelled: onNoteCancelled,
+        ),
       ),
     );
   }

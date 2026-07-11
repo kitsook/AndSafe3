@@ -10,6 +10,7 @@ import 'package:andsafe/utils/notification.dart';
 import 'package:andsafe/utils/services/database_service.dart' as db;
 import 'package:flutter/material.dart';
 import 'package:loading_overlay/loading_overlay.dart';
+import 'package:provider/provider.dart';
 
 class NoteEditPage extends StatelessWidget {
   final String id;
@@ -128,7 +129,8 @@ class NoteEditState extends State<NoteEdit> {
 
   Future<bool> _loadTheNote() async {
     if (widget.id != null) {
-      Note? note = await db.adapter.getNote(widget.id!);
+      final adapter = Provider.of<db.DatabaseAdapter>(context, listen: false);
+      Note? note = await adapter.getNote(widget.id!);
       if (note != null) {
         titleFieldController.text = note.title;
         bodyFieldController.text =
@@ -238,11 +240,12 @@ class NoteEditState extends State<NoteEdit> {
         widget.password,
         version: currentSignatureVer,
       );
+      final adapter = Provider.of<db.DatabaseAdapter>(context, listen: false);
       int? newId = widget.id;
       if (widget.id == null) {
-        newId = await db.adapter.insertNote(theNote);
+        newId = await adapter.insertNote(theNote);
       } else {
-        await db.adapter.updateNote(theNote);
+        await adapter.updateNote(theNote);
       }
       return newId;
     } catch (e) {

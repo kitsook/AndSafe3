@@ -12,6 +12,7 @@ import 'package:andsafe/utils/services/biometric_service.dart';
 import 'package:andsafe/utils/services/database_service.dart' as db;
 import 'package:flutter/material.dart';
 import 'package:loading_overlay/loading_overlay.dart';
+import 'package:provider/provider.dart';
 import 'package:sqflite/sqflite.dart';
 
 class ChangePasswordPage extends StatefulWidget {
@@ -165,20 +166,21 @@ class _ChangePasswordPageState extends State {
         newPassword =
             Uint8List.fromList(utf8.encode(_newPassword1Controller.text));
 
-        Signature? signature = await db.adapter.getSignature();
+        final adapter = Provider.of<db.DatabaseAdapter>(context, listen: false);
+        Signature? signature = await adapter.getSignature();
         final signatureCheck =
             await verifySignature(signature, currentPassword);
         if (signatureCheck) {
-          List<Note> allNotes = await db.adapter.getNotes();
+          List<Note> allNotes = await adapter.getNotes();
           this._totalToReEncrypt = allNotes.length;
           this._currentlyReEncrypting = 0;
 
           Signature newSignature = await createSignature(newPassword);
 
           // get database transaction to update everything
-          Database database = await db.adapter.getDb();
+          Database database = await adapter.getDb();
           await database.transaction((txn) async {
-            await db.adapter.generateSignature(newSignature, txn);
+            await adapter.generateSignature(newSignature, txn);
             for (var note in allNotes) {
               _progressStreamController.add(++this._currentlyReEncrypting);
               Note newNote = await createNote(
@@ -190,7 +192,7 @@ class _ChangePasswordPageState extends State {
                   newPassword!,
                   version: currentSignatureVer,
                   lastUpdated: note.lastUpdate);
-              await db.adapter.updateNote(newNote, txn);
+              await adapter.updateNote(newNote, txn);
             }
           });
 

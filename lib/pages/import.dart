@@ -13,6 +13,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:loading_overlay/loading_overlay.dart';
+import 'package:provider/provider.dart';
 
 class ImportPage extends StatelessWidget {
   @override
@@ -266,10 +267,11 @@ class _ImportPageState extends State<_ImportPageInternal> {
                 }
 
                 // Insert all notes atomically in a single transaction
-                final database = await db.adapter.getDb();
+                final adapter = Provider.of<db.DatabaseAdapter>(context, listen: false);
+                final database = await adapter.getDb();
                 await database.transaction((txn) async {
                   for (var note in notesToInsert) {
-                    await db.adapter.insertNote(note, txn);
+                    await adapter.insertNote(note, txn);
                   }
                 });
 

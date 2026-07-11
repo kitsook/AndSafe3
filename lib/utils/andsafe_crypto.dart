@@ -212,12 +212,13 @@ Future<bool> _computeSignatureAndCompare(Map data) async {
 }
 
 Future<void> migrateAllNotes(
+    db.DatabaseAdapter adapter,
     Uint8List password,
     int oldVersion,
     Future<void> Function(int current, int total) onProgress) async {
-  final notes = await db.adapter.getNotes();
+  final notes = await adapter.getNotes();
   final total = notes.length;
-  final database = await db.adapter.getDb();
+  final database = await adapter.getDb();
 
   // Re-create signature with new scrypt params BEFORE the transaction.
   // This runs scrypt on an isolate and must happen outside the txn.
@@ -226,7 +227,7 @@ Future<void> migrateAllNotes(
   // Single transaction: all note updates + signature replacement
   await database.transaction((txn) async {
     // Replace signature (re-encrypted with N=65536)
-    await db.adapter.generateSignature(newSignature, txn);
+    await adapter.generateSignature(newSignature, txn);
 
     for (int i = 0; i < total; i++) {
       await onProgress(i + 1, total);
@@ -247,7 +248,7 @@ Future<void> migrateAllNotes(
           lastUpdated: note.lastUpdate);
 
       // Save in place within transaction
-      await db.adapter.updateNote(newNote, txn);
+      await adapter.updateNote(newNote, txn);
     }
   });
 }

@@ -13,6 +13,7 @@ import 'package:andsafe/utils/services/export_import_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:loading_overlay/loading_overlay.dart';
+import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -277,14 +278,15 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             return;
           }
 
-          final signature = await db.adapter.getSignature();
+          final adapter = Provider.of<db.DatabaseAdapter>(context, listen: false);
+          final signature = await adapter.getSignature();
           if (signature == null) {
             throw Exception('No signature found');
           }
           await exportNotes(
               exportFileName,
               signature,
-              await db.adapter.getNotes());
+              await adapter.getNotes());
           displaySnackBarMsg(
               context: context,
               msg: AppLocalizations.of(context)!.exportedToFile +

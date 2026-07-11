@@ -5,7 +5,7 @@ import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
 DatabaseAdapter adapter = DatabaseAdapter();
-const _currentDatabaseVersion = 2;
+const _currentDatabaseVersion = 3;
 
 class DatabaseAdapter {
   Future<Database>? _database;
@@ -32,12 +32,10 @@ class DatabaseAdapter {
 
         await db
             .execute('create virtual table searchable ' + 'using fts3 (title)');
-        // TODO the original plan was to create an index with upper(title)...
-        // but it is not supported by older version of android. so for now,
-        // we sort the list after retrieving the notes from db
-        // await db.execute('create index idx_notes_title on notes(title, _id)');
-        // await db.execute('create index idx_notes_last_update on notes(last_update, _id)');
-        await db.execute('create index idx_notes_title on notes(_id)');
+        await db.execute(
+            'create index idx_notes_title_nocase on notes(title collate nocase);');
+        await db.execute(
+            'create index idx_notes_last_update on notes(last_update);');
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion == 1) {
@@ -58,6 +56,16 @@ class DatabaseAdapter {
                   ');');
           await txn.update('signature', {'ver': currentSignatureVer});
         });
+
+        if (oldVersion < 3) {
+          await db.transaction((txn) async {
+            await txn.execute('drop index if exists idx_notes_title;');
+            await txn.execute(
+                'create index idx_notes_title_nocase on notes(title collate nocase);');
+            await txn.execute(
+                'create index idx_notes_last_update on notes(last_update);');
+          });
+        }
       },
       version: _currentDatabaseVersion,
     );
@@ -123,27 +131,79 @@ class DatabaseAdapter {
     await db.transaction((txn) => _deleteNote(id, txn));
   }
 
+  /// SQLite has a limit on the number of host parameters in a single statement
+  /// (SQLITE_MAX_VARIABLE_NUMBER, default 999). Batch queries accordingly.
+  static const _sqliteMaxVariableNumber = 999;
+
   Future<List<Note>> getNotes([Set<int> ids = const <int>{}]) async {
     final Database db = await _getDatabase();
     final String sortBy = await Prefs.getSortBy();
     final bool sortAscending = await Prefs.isSortAscending();
-    List<Map> rows = await db.query(
-      'notes',
-      // orderBy: sortBy + (sortAscending? ' asc' : ' desc') + ', _id asc',
-      // orderBy: '_id asc',
-    );
-    // TODO sort and filter with sql query instead of doing it after retrieving all notes
-    final List<Note> notes = rows
-        .where((row) => ids.isEmpty || ids.contains(row['_id']))
+
+    final String orderBy;
+    if (sortBy == PREF_SORT_KEY_TITLE) {
+      orderBy = 'title COLLATE NOCASE ${sortAscending ? 'ASC' : 'DESC'}, last_update DESC, _id DESC';
+    } else {
+      orderBy = 'last_update ${sortAscending ? 'ASC' : 'DESC'}, _id DESC';
+    }
+
+    List<Map> rows;
+    if (ids.isEmpty) {
+      rows = await db.query(
+        'notes',
+        orderBy: orderBy,
+      );
+    } else if (ids.length <= _sqliteMaxVariableNumber) {
+      rows = await db.query(
+        'notes',
+        where: '_id IN (${ids.map((_) => '?').join(',')})',
+        whereArgs: ids.toList(),
+        orderBy: orderBy,
+      );
+    } else {
+      // Batch queries to stay within SQLite parameter limit
+      rows = [];
+      final idList = ids.toList();
+      for (var i = 0; i < idList.length; i += _sqliteMaxVariableNumber) {
+        final batch = idList.sublist(
+            i,
+            i + _sqliteMaxVariableNumber > idList.length
+                ? idList.length
+                : i + _sqliteMaxVariableNumber);
+        final batchRows = await db.query(
+          'notes',
+          where: '_id IN (${batch.map((_) => '?').join(',')})',
+          whereArgs: batch,
+          orderBy: orderBy,
+        );
+        rows.addAll(batchRows);
+      }
+    }
+
+    final notes = rows
         .map((row) => Note.fromMap(row as Map<String, dynamic>))
         .toList();
-    notes.sort((a, b) {
-      if (sortBy == PREF_SORT_KEY_TITLE) {
-        return a.title.toUpperCase().compareTo(b.title.toUpperCase()) *
-            (sortAscending ? 1 : -1);
-      }
-      return a.lastUpdate.compareTo(b.lastUpdate) * (sortAscending ? 1 : -1);
-    });
+
+    // Re-sort in Dart when results came from multiple batches, since each
+    // batch is individually sorted but the merged list is not.
+    if (ids.length > _sqliteMaxVariableNumber) {
+      notes.sort((a, b) {
+        if (sortBy == PREF_SORT_KEY_TITLE) {
+          final cmp = a.title.toUpperCase().compareTo(b.title.toUpperCase()) *
+              (sortAscending ? 1 : -1);
+          if (cmp != 0) return cmp;
+          final cmpDate = b.lastUpdate.compareTo(a.lastUpdate);
+          if (cmpDate != 0) return cmpDate;
+          return b.id!.compareTo(a.id!);
+        } else {
+          final cmp = a.lastUpdate.compareTo(b.lastUpdate) *
+              (sortAscending ? 1 : -1);
+          if (cmp != 0) return cmp;
+          return b.id!.compareTo(a.id!);
+        }
+      });
+    }
+
     return notes;
   }
 

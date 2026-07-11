@@ -5,6 +5,7 @@ import 'package:andsafe/models/note.dart';
 import 'package:andsafe/models/signature.dart';
 import 'package:andsafe/pages/note_edit.dart';
 import 'package:andsafe/utils/services/database_service.dart' as db;
+import 'package:andsafe/utils/services/note_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -17,7 +18,7 @@ class MockDatabase implements Database {
   dynamic noSuchMethod(Invocation invocation) => null;
 }
 
-class MockNoteService extends db.NoteService {
+class MockNoteService extends NoteService {
   Note? noteToReturn;
   int nextInsertId = 10;
   bool insertNoteCalled = false;
@@ -72,7 +73,7 @@ void main() {
     ValueChanged<int?>? onNoteDeleted,
     VoidCallback? onNoteCancelled,
   }) {
-    return Provider<db.NoteService>.value(
+    return Provider<NoteService>.value(
       value: mockAdapter,
       child: MaterialApp(
         localizationsDelegates: [

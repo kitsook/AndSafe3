@@ -8,6 +8,7 @@ import 'package:andsafe/utils/andsafe_crypto.dart';
 import 'package:andsafe/utils/logger.dart';
 import 'package:andsafe/utils/notification.dart';
 import 'package:andsafe/utils/services/database_service.dart' as db;
+import 'package:andsafe/utils/services/note_service.dart';
 import 'package:andsafe/utils/services/export_import_service.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
@@ -267,7 +268,7 @@ class _ImportPageState extends State<_ImportPageInternal> {
                 }
 
                 // Insert all notes atomically in a single transaction
-                final noteService = Provider.of<db.NoteService>(context, listen: false);
+                final noteService = Provider.of<NoteService>(context, listen: false);
                 final database = noteService.db;
                 await database.transaction((txn) async {
                   for (var note in notesToInsert) {

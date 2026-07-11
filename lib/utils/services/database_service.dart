@@ -2,9 +2,6 @@ import 'package:andsafe/models/signature.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
-export 'note_service.dart';
-export 'signature_service.dart';
-
 const _currentDatabaseVersion = 3;
 
 class DatabaseHelper {

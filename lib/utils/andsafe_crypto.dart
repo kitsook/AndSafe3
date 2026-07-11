@@ -9,6 +9,8 @@ import 'package:andsafe/models/signature.dart';
 import 'package:andsafe/utils/helpers.dart';
 import 'package:andsafe/utils/logger.dart';
 import 'package:andsafe/utils/services/database_service.dart' as db;
+import 'package:andsafe/utils/services/note_service.dart';
+import 'package:andsafe/utils/services/signature_service.dart';
 import 'package:ffi/ffi.dart';
 import 'package:flutter/foundation.dart';
 import 'package:pointycastle/api.dart';
@@ -212,8 +214,8 @@ Future<bool> _computeSignatureAndCompare(Map data) async {
 }
 
 Future<void> migrateAllNotes(
-    db.NoteService noteService,
-    db.SignatureService signatureService,
+    NoteService noteService,
+    SignatureService signatureService,
     Uint8List password,
     int oldVersion,
     Future<void> Function(int current, int total) onProgress) async {

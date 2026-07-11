@@ -8,6 +8,8 @@ import 'package:andsafe/utils/logger.dart';
 import 'package:andsafe/utils/notification.dart';
 import 'package:andsafe/utils/services/biometric_service.dart';
 import 'package:andsafe/utils/services/database_service.dart' as db;
+import 'package:andsafe/utils/services/note_service.dart';
+import 'package:andsafe/utils/services/signature_service.dart';
 import 'package:andsafe/utils/services/preferences_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -97,8 +99,8 @@ class AuthService {
       },
     );
     try {
-      final noteService = Provider.of<db.NoteService>(context, listen: false);
-      final signatureService = Provider.of<db.SignatureService>(context, listen: false);
+      final noteService = Provider.of<NoteService>(context, listen: false);
+      final signatureService = Provider.of<SignatureService>(context, listen: false);
       await migrateAllNotes(noteService, signatureService, passwordBytes, oldVer, (current, total) async {
         migrationProgressNotifier.value =
             AppLocalizations.of(context)!.migratingNote(current, total);
@@ -117,7 +119,7 @@ class AuthService {
   }
 
   Future<bool> unlockWithPassword(Uint8List passwordBytes) async {
-    final signatureService = Provider.of<db.SignatureService>(context, listen: false);
+    final signatureService = Provider.of<SignatureService>(context, listen: false);
     Signature? signature = await signatureService.getSignature();
     final signatureCheck = await verifySignature(signature, passwordBytes);
     if (signatureCheck) {

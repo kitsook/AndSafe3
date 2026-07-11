@@ -9,6 +9,8 @@ import 'package:andsafe/utils/logger.dart';
 import 'package:andsafe/utils/notification.dart';
 import 'package:andsafe/utils/services/auth_service.dart';
 import 'package:andsafe/utils/services/database_service.dart' as db;
+import 'package:andsafe/utils/services/note_service.dart';
+import 'package:andsafe/utils/services/signature_service.dart';
 import 'package:andsafe/utils/services/export_import_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -278,8 +280,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             return;
           }
 
-          final noteService = Provider.of<db.NoteService>(context, listen: false);
-          final signatureService = Provider.of<db.SignatureService>(context, listen: false);
+          final noteService = Provider.of<NoteService>(context, listen: false);
+          final signatureService = Provider.of<SignatureService>(context, listen: false);
           final signature = await signatureService.getSignature();
           if (signature == null) {
             throw Exception('No signature found');

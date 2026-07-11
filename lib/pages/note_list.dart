@@ -6,6 +6,7 @@ import 'package:andsafe/utils/category_icons.dart';
 import 'package:andsafe/utils/logger.dart';
 import 'package:andsafe/utils/notification.dart';
 import 'package:andsafe/utils/services/database_service.dart' as db;
+import 'package:andsafe/utils/services/note_service.dart';
 import 'package:andsafe/utils/services/preferences_service.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -154,7 +155,7 @@ class NoteListState extends State<NoteList> {
   }
 
   Future<int> _reloadNotes() async {
-    final noteService = Provider.of<db.NoteService>(context, listen: false);
+    final noteService = Provider.of<NoteService>(context, listen: false);
     if (_searchFieldController.text.isEmpty) {
       _notes = await noteService.getNotes();
       return _notes.length;
@@ -334,7 +335,7 @@ class NoteListState extends State<NoteList> {
   }
 
   Future<void> doDeleteNote(int noteId) async {
-    final noteService = Provider.of<db.NoteService>(context, listen: false);
+    final noteService = Provider.of<NoteService>(context, listen: false);
     Note? justDeleted = await noteService.getNote(noteId);
 
     SnackBarAction undoAction = SnackBarAction(

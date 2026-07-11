@@ -4,6 +4,8 @@ import 'package:andsafe/utils/ThemeChanger.dart';
 import 'package:andsafe/utils/logger.dart';
 import 'package:andsafe/utils/services/preferences_service.dart';
 import 'package:andsafe/utils/services/database_service.dart' as db;
+import 'package:andsafe/utils/services/note_service.dart';
+import 'package:andsafe/utils/services/signature_service.dart';
 import 'package:flag_secure/flag_secure.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -24,8 +26,8 @@ void main() async {
 
   final dbHelper = db.DatabaseHelper();
   final database = await dbHelper.getDatabase();
-  final noteService = db.NoteService(database);
-  final signatureService = db.SignatureService(database);
+  final noteService = NoteService(database);
+  final signatureService = SignatureService(database);
   final bool isPasswordSet = await signatureService.isPasswordSet();
 
   runApp(MyApp(themeMode, isPasswordSet, noteService, signatureService));
@@ -34,8 +36,8 @@ void main() async {
 class MyApp extends StatelessWidget {
   final ThemeMode themeMode;
   final bool isPasswordSet;
-  final db.NoteService noteService;
-  final db.SignatureService signatureService;
+  final NoteService noteService;
+  final SignatureService signatureService;
 
   MyApp(this.themeMode, this.isPasswordSet, this.noteService, this.signatureService);
 
@@ -55,8 +57,8 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeChanger(themeMode)),
-        Provider<db.NoteService>.value(value: noteService),
-        Provider<db.SignatureService>.value(value: signatureService),
+        Provider<NoteService>.value(value: noteService),
+        Provider<SignatureService>.value(value: signatureService),
       ],
       child: Consumer<ThemeChanger>(builder: (_, themeChanger, __) {
         return MaterialApp(

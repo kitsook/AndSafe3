@@ -7,7 +7,6 @@ import 'package:andsafe/utils/andsafe_crypto.dart';
 import 'package:andsafe/utils/logger.dart';
 import 'package:andsafe/utils/notification.dart';
 import 'package:andsafe/utils/services/biometric_service.dart';
-import 'package:andsafe/utils/services/database_service.dart' as db;
 import 'package:andsafe/utils/services/note_service.dart';
 import 'package:andsafe/utils/services/signature_service.dart';
 import 'package:andsafe/utils/services/preferences_service.dart';

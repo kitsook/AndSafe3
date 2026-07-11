@@ -8,7 +8,6 @@ import 'package:andsafe/pages/note_list.dart';
 import 'package:andsafe/utils/logger.dart';
 import 'package:andsafe/utils/notification.dart';
 import 'package:andsafe/utils/services/auth_service.dart';
-import 'package:andsafe/utils/services/database_service.dart' as db;
 import 'package:andsafe/utils/services/note_service.dart';
 import 'package:andsafe/utils/services/signature_service.dart';
 import 'package:andsafe/utils/services/export_import_service.dart';

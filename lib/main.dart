@@ -15,8 +15,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   AndSafeRouter.setupRouter();
 
-  String theme = await Prefs.getSelectedTheme();
-  ThemeMode themeMode = theme == PREF_THEME_LIGHT
+  final String theme = await Prefs.getSelectedTheme();
+  final ThemeMode themeMode = theme == PREF_THEME_LIGHT
       ? ThemeMode.light
       : theme == PREF_THEME_DARK
           ? ThemeMode.dark
@@ -26,7 +26,7 @@ void main() async {
   final database = await dbHelper.getDatabase();
   final noteService = db.NoteService(database);
   final signatureService = db.SignatureService(database);
-  bool isPasswordSet = await signatureService.isPasswordSet();
+  final bool isPasswordSet = await signatureService.isPasswordSet();
 
   runApp(MyApp(themeMode, isPasswordSet, noteService, signatureService));
 }

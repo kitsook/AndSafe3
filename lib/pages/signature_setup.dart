@@ -12,6 +12,8 @@ import 'package:loading_overlay/loading_overlay.dart';
 import 'package:provider/provider.dart';
 
 class SignatureSetupPage extends StatefulWidget {
+  const SignatureSetupPage({super.key});
+
   @override
   State<StatefulWidget> createState() {
     return _SignatureInputState();
@@ -40,7 +42,7 @@ class _SignatureInputState extends State<SignatureSetupPage> {
         title: Text('AndSafe'),
       ),
       body: LoadingOverlay(
-        isLoading: this._isBusy,
+        isLoading: _isBusy,
         child: Container(
           padding: EdgeInsets.all(10.0),
           child: Form(
@@ -76,7 +78,7 @@ class _SignatureInputState extends State<SignatureSetupPage> {
     return TextFormField(
       autofocus: true,
       controller: _password1Controller,
-      decoration: new InputDecoration(
+      decoration: InputDecoration(
           contentPadding:
               EdgeInsets.only(left: 15, bottom: 11, top: 11, right: 15),
           hintText: AppLocalizations.of(context)!.enterPassword),
@@ -97,7 +99,7 @@ class _SignatureInputState extends State<SignatureSetupPage> {
     return TextFormField(
       autofocus: true,
       controller: _password2Controller,
-      decoration: new InputDecoration(
+      decoration: InputDecoration(
           contentPadding:
               EdgeInsets.only(left: 15, bottom: 11, top: 11, right: 15),
           hintText: AppLocalizations.of(context)!.enterSamePasswordAgain),
@@ -128,15 +130,17 @@ class _SignatureInputState extends State<SignatureSetupPage> {
                 msg: AppLocalizations.of(context)!.generatingEncryptionKey);
 
             setState(() {
-              this._isBusy = true;
+              _isBusy = true;
             });
             Uint8List? passwordBytes;
             try {
               passwordBytes =
                   Uint8List.fromList(utf8.encode(_password1Controller.text));
               Signature signature = await createSignature(passwordBytes);
+              if (!mounted) return;
               final signatureService = Provider.of<SignatureService>(context, listen: false);
               await signatureService.generateSignature(signature);
+              if (!mounted) return;
 
               // signature set. proceed to load list
               Navigator.pushReplacementNamed(context, 'home',
@@ -145,14 +149,17 @@ class _SignatureInputState extends State<SignatureSetupPage> {
               passwordBytes?.fillRange(0, passwordBytes.length, 0);
               log.fine("Failed to save the signature");
               log.fine(e.toString());
+              if (!mounted) return;
               displaySnackBarMsg(
                   context: context,
                   msg: AppLocalizations.of(context)!
                       .failedGeneratingEncryptionKey);
             } finally {
-              setState(() {
-                this._isBusy = false;
-              });
+              if (mounted) {
+                setState(() {
+                  _isBusy = false;
+                });
+              }
             }
           }
         },

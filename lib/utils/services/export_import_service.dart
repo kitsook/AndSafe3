@@ -17,7 +17,7 @@ Tuple2<Signature, List<Note>> parseNotesFromFile(String theFileName) {
   List<Note> importedNotes = [];
   Signature importedSignature;
 
-  final File file = new File(theFileName);
+  final File file = File(theFileName);
   final XmlDocument document = XmlDocument.parse(file.readAsStringSync());
 
   // parse signature
@@ -152,7 +152,7 @@ Future<String?> getNewExportFullFilePath() async {
 
 String _newExportFileName() {
   final DateFormat formatter = DateFormat('yyyyMMdd_HHmmss');
-  return 'AndSafe' + formatter.format(DateTime.now()) + '.xml';
+  return 'AndSafe${formatter.format(DateTime.now())}.xml';
 }
 
 Signature _parseSignatureRow(XmlElement row) {

@@ -18,9 +18,9 @@ void main() async {
   AndSafeRouter.setupRouter();
 
   final String theme = await Prefs.getSelectedTheme();
-  final ThemeMode themeMode = theme == PREF_THEME_LIGHT
+  final ThemeMode themeMode = theme == prefThemeLight
       ? ThemeMode.light
-      : theme == PREF_THEME_DARK
+      : theme == prefThemeDark
           ? ThemeMode.dark
           : ThemeMode.system;
 
@@ -39,7 +39,7 @@ class MyApp extends StatelessWidget {
   final NoteService noteService;
   final SignatureService signatureService;
 
-  MyApp(this.themeMode, this.isPasswordSet, this.noteService, this.signatureService);
+  const MyApp(this.themeMode, this.isPasswordSet, this.noteService, this.signatureService, {super.key});
 
   Future<void> _setFlagSecure() async {
     try {
@@ -60,7 +60,7 @@ class MyApp extends StatelessWidget {
         Provider<NoteService>.value(value: noteService),
         Provider<SignatureService>.value(value: signatureService),
       ],
-      child: Consumer<ThemeChanger>(builder: (_, themeChanger, __) {
+      child: Consumer<ThemeChanger>(builder: (_, themeChanger, _) {
         return MaterialApp(
           // debugShowCheckedModeBanner: false,
           title: 'AndSafe',

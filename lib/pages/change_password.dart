@@ -17,6 +17,8 @@ import 'package:provider/provider.dart';
 import 'package:sqflite/sqflite.dart';
 
 class ChangePasswordPage extends StatefulWidget {
+  const ChangePasswordPage({super.key});
+
   @override
   State<StatefulWidget> createState() {
     return _ChangePasswordPageState();
@@ -30,8 +32,8 @@ class _ChangePasswordPageState extends State {
   final _newPassword2Controller = TextEditingController();
   bool _isBusy = false;
 
-  StreamController<int> _progressStreamController = StreamController<int>();
-  late Stream<int> _progressStream =
+  final StreamController<int> _progressStreamController = StreamController<int>();
+  late final Stream<int> _progressStream =
       _progressStreamController.stream.asBroadcastStream();
 
   int _totalToReEncrypt = 0;
@@ -53,7 +55,7 @@ class _ChangePasswordPageState extends State {
           title: Text(AppLocalizations.of(context)!.changePasswordTitle),
         ),
         body: LoadingOverlay(
-            isLoading: this._isBusy,
+            isLoading: _isBusy,
             progressIndicator: _buildProgressIndicator(),
             child: Container(
               padding: EdgeInsets.symmetric(horizontal: 20),
@@ -89,7 +91,7 @@ class _ChangePasswordPageState extends State {
       autofocus: false,
       controller: _origPasswordController,
       textInputAction: TextInputAction.next,
-      decoration: new InputDecoration(
+      decoration: InputDecoration(
           contentPadding:
               EdgeInsets.only(left: 15, bottom: 11, top: 11, right: 15),
           labelText: AppLocalizations.of(context)!.currentPassword),
@@ -111,7 +113,7 @@ class _ChangePasswordPageState extends State {
       autofocus: false,
       controller: _newPassword1Controller,
       textInputAction: TextInputAction.next,
-      decoration: new InputDecoration(
+      decoration: InputDecoration(
           contentPadding:
               EdgeInsets.only(left: 15, bottom: 11, top: 11, right: 15),
           labelText: AppLocalizations.of(context)!.newPassword),
@@ -134,7 +136,7 @@ class _ChangePasswordPageState extends State {
       controller: _newPassword2Controller,
       textInputAction: TextInputAction.done,
       onFieldSubmitted: (_) => _submitForm(),
-      decoration: new InputDecoration(
+      decoration: InputDecoration(
           contentPadding:
               EdgeInsets.only(left: 15, bottom: 11, top: 11, right: 15),
           labelText: AppLocalizations.of(context)!.newPassword2),
@@ -157,7 +159,7 @@ class _ChangePasswordPageState extends State {
     // validate form fields
     if (_formKey.currentState!.validate()) {
       setState(() {
-        this._isBusy = true;
+        _isBusy = true;
       });
       Uint8List? currentPassword;
       Uint8List? newPassword;
@@ -170,21 +172,25 @@ class _ChangePasswordPageState extends State {
         final noteService = Provider.of<NoteService>(context, listen: false);
         final signatureService = Provider.of<SignatureService>(context, listen: false);
         Signature? signature = await signatureService.getSignature();
+        if (!mounted) return;
         final signatureCheck =
             await verifySignature(signature, currentPassword);
+        if (!mounted) return;
         if (signatureCheck) {
           List<Note> allNotes = await noteService.getNotes();
-          this._totalToReEncrypt = allNotes.length;
-          this._currentlyReEncrypting = 0;
+          if (!mounted) return;
+          _totalToReEncrypt = allNotes.length;
+          _currentlyReEncrypting = 0;
 
           Signature newSignature = await createSignature(newPassword);
+          if (!mounted) return;
 
           // get database transaction to update everything
           Database database = noteService.db;
           await database.transaction((txn) async {
             await signatureService.generateSignature(newSignature, txn);
             for (var note in allNotes) {
-              _progressStreamController.add(++this._currentlyReEncrypting);
+              _progressStreamController.add(++_currentlyReEncrypting);
               Note newNote = await createNote(
                   note.id,
                   note.categoryId,
@@ -201,6 +207,7 @@ class _ChangePasswordPageState extends State {
           // Clear biometric data so user is prompted to re-enroll
           // with the new password on next login
           await BiometricService().clearStoredPassword();
+          if (!mounted) return;
 
           Navigator.pop(context, true);
         } else {
@@ -212,15 +219,18 @@ class _ChangePasswordPageState extends State {
       } catch (e) {
         log.fine("Failed to change password");
         log.fine(e.toString());
+        if (!mounted) return;
         displaySnackBarMsg(
             context: context,
             msg: AppLocalizations.of(context)!.failedToChangePassword);
       } finally {
         currentPassword?.fillRange(0, currentPassword.length, 0);
         newPassword?.fillRange(0, newPassword.length, 0);
-        setState(() {
-          this._isBusy = false;
-        });
+        if (mounted) {
+          setState(() {
+            _isBusy = false;
+          });
+        }
       }
     }
   }
@@ -236,41 +246,38 @@ class _ChangePasswordPageState extends State {
   }
 
   Widget _buildProgressIndicator() {
-    return Container(
-      child: StreamBuilder(
-          stream: _progressStream,
-          initialData: 0,
-          builder: (BuildContext context, AsyncSnapshot<int> snapshot) {
-            List<Widget> children;
-            if (snapshot.hasError) {
-              children = <Widget>[
-                CircularProgressIndicator(),
-              ];
-            } else if (snapshot.connectionState == ConnectionState.waiting) {
-              children = <Widget>[
-                CircularProgressIndicator(),
-                SizedBox(height: 10),
-                Text(AppLocalizations.of(context)!.verifying),
-              ];
-            } else if (snapshot.connectionState == ConnectionState.active &&
-                _totalToReEncrypt > 0) {
-              children = <Widget>[
-                CircularProgressIndicator(),
-                SizedBox(height: 10),
-                Text(AppLocalizations.of(context)!.reEncrypting +
-                    ' (${snapshot.data} / $_totalToReEncrypt)'),
-              ];
-            } else {
-              children = <Widget>[
-                CircularProgressIndicator(),
-              ];
-            }
-            return Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: children,
-            );
-          }),
-    );
+    return StreamBuilder(
+        stream: _progressStream,
+        initialData: 0,
+        builder: (BuildContext context, AsyncSnapshot<int> snapshot) {
+          List<Widget> children;
+          if (snapshot.hasError) {
+            children = <Widget>[
+              CircularProgressIndicator(),
+            ];
+          } else if (snapshot.connectionState == ConnectionState.waiting) {
+            children = <Widget>[
+              CircularProgressIndicator(),
+              SizedBox(height: 10),
+              Text(AppLocalizations.of(context)!.verifying),
+            ];
+          } else if (snapshot.connectionState == ConnectionState.active &&
+              _totalToReEncrypt > 0) {
+            children = <Widget>[
+              CircularProgressIndicator(),
+              SizedBox(height: 10),
+              Text('${AppLocalizations.of(context)!.reEncrypting} (${snapshot.data} / $_totalToReEncrypt)'),
+            ];
+          } else {
+            children = <Widget>[
+              CircularProgressIndicator(),
+            ];
+          }
+          return Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: children,
+          );
+        });
   }
 }

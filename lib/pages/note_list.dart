@@ -21,7 +21,7 @@ class NoteList extends StatefulWidget {
   final int refreshCounter;
 
   const NoteList({
-    Key? key,
+    super.key,
     this.password,
     this.drawer,
     this.onNoteSelected,
@@ -29,7 +29,7 @@ class NoteList extends StatefulWidget {
     this.onPasswordRequested,
     this.onRefreshRequested,
     this.refreshCounter = 0,
-  }) : super(key: key);
+  });
 
   @override
   NoteListState createState() => NoteListState();
@@ -61,19 +61,19 @@ class NoteListState extends State<NoteList> {
         centerTitle: false,
         actions: <Widget>[
           _buildSortByIconButton(
-            key: PREF_SORT_KEY_TITLE,
+            key: prefSortKeyTitle,
             icon: Icons.sort_by_alpha_rounded,
             onPressed: () async {
-              Prefs.setSortBy(PREF_SORT_KEY_TITLE);
+              Prefs.setSortBy(prefSortKeyTitle);
               Prefs.setSortAscending(!await Prefs.isSortAscending());
               setState(() {});
             },
           ),
           _buildSortByIconButton(
-            key: PREF_SORT_KEY_LAST_UPDATE,
+            key: prefSortKeyLastUpdate,
             icon: Icons.timer_rounded,
             onPressed: () async {
-              Prefs.setSortBy(PREF_SORT_KEY_LAST_UPDATE);
+              Prefs.setSortBy(prefSortKeyLastUpdate);
               Prefs.setSortAscending(!await Prefs.isSortAscending());
               setState(() {});
             },
@@ -93,10 +93,9 @@ class NoteListState extends State<NoteList> {
             if (snapshot.hasError) {
               log.severe("Problem loading notes");
               log.severe(snapshot.error.toString());
-              return Container(
-                  child: Center(
-                      child: Text(
-                          AppLocalizations.of(context)!.problemLoadingNotes)));
+              return Center(
+                  child: Text(
+                      AppLocalizations.of(context)!.problemLoadingNotes));
             }
 
             if (snapshot.hasData &&
@@ -114,8 +113,7 @@ class NoteListState extends State<NoteList> {
             }
 
             if (snapshot.data == null) {
-              return Container(
-                  child: Center(child: CircularProgressIndicator()));
+              return Center(child: CircularProgressIndicator());
             } else {
               return _buildNoteList(snapshot.data![1] as bool);
             }
@@ -160,7 +158,7 @@ class NoteListState extends State<NoteList> {
       return _notes.length;
     }
     Set<int> ids =
-        await noteService.searchNotes(_searchFieldController.text + '*');
+        await noteService.searchNotes('${_searchFieldController.text}*');
     if (ids.isEmpty) {
       _notes = <Note>[];
       return 0;
@@ -169,7 +167,7 @@ class NoteListState extends State<NoteList> {
     return _notes.length;
   }
 
-  Widget _buildSearchField(context) {
+  Widget _buildSearchField(BuildContext context) {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(left: 10.0, right: 10.0, bottom: 10.0),
@@ -336,6 +334,7 @@ class NoteListState extends State<NoteList> {
   Future<void> doDeleteNote(int noteId) async {
     final noteService = Provider.of<NoteService>(context, listen: false);
     Note? justDeleted = await noteService.getNote(noteId);
+    if (!mounted) return;
 
     SnackBarAction undoAction = SnackBarAction(
       label: AppLocalizations.of(context)!.undo,
@@ -352,6 +351,7 @@ class NoteListState extends State<NoteList> {
     );
     if (widget.password != null) {
       await noteService.deleteNote(noteId);
+      if (!mounted) return;
       if (widget.onRefreshRequested != null) {
         widget.onRefreshRequested!();
       } else {

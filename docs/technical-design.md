@@ -118,5 +118,5 @@ All database helper initialization, note, and signature queries are wrapped insi
 The project uses `flutter_lints` to enforce coding style and guidelines.
 
 * **Configuration**: The rules are configured in `analysis_options.yaml` at the project root.
-* **Baseline Settings**: To handle the existing codebase pragmatically, some lint rules are temporarily disabled in the baseline configuration to ensure a clean build and allow incremental refactoring.
+* **Strict Compliance**: The codebase is 100% compliant with the recommended Flutter static analysis preset. No rules are disabled, guaranteeing clean static analysis runs.
 * **File Naming**: All files must follow the standard Dart `snake_case` convention. For example, the theme changing class file is named `theme_changer.dart`.

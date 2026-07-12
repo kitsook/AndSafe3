@@ -13,14 +13,14 @@ class HomeDrawer extends StatelessWidget {
   final VoidCallback onExitApp;
 
   const HomeDrawer({
-    Key? key,
+    super.key,
     required this.isAuthenticated,
     required this.onOpenSettings,
     required this.onChangePassword,
     required this.onImportNotes,
     required this.onExportNotes,
     required this.onExitApp,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +37,7 @@ class HomeDrawer extends StatelessWidget {
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ),
-                Container(
+                SizedBox(
                   width: double.infinity,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
@@ -72,14 +72,12 @@ class HomeDrawer extends StatelessWidget {
           ),
           Divider(),
           _buildWebsiteLauncher(context),
-          Container(
-            child: Align(
-              alignment: FractionalOffset.bottomCenter,
-              child: Column(
-                children: [
-                  BuildVersionText(),
-                ],
-              ),
+          Align(
+            alignment: FractionalOffset.bottomCenter,
+            child: Column(
+              children: [
+                BuildVersionText(),
+              ],
             ),
           ),
         ],
@@ -150,6 +148,8 @@ class HomeDrawer extends StatelessWidget {
 }
 
 class BuildVersionText extends StatelessWidget {
+  const BuildVersionText({super.key});
+
   @override
   Widget build(BuildContext context) {
     Future<PackageInfo> packageInfo = PackageInfo.fromPlatform();
@@ -160,10 +160,10 @@ class BuildVersionText extends StatelessWidget {
         if (snapshot.hasError) {
           log.severe("Problem retrieving version info");
           log.severe(snapshot.error.toString());
-          return Container(child: Center(child: Text('AndSafe3')));
+          return Center(child: Text('AndSafe3'));
         }
         if (snapshot.data == null) {
-          return Container(child: Center(child: Text('AndSafe3')));
+          return Center(child: Text('AndSafe3'));
         } else {
           String appName = snapshot.data!.appName;
           String version = snapshot.data!.version;

@@ -16,7 +16,7 @@ class NoteEditPage extends StatelessWidget {
   final String id;
   final Key? noteEditKey;
 
-  NoteEditPage(this.id, {this.noteEditKey});
+  const NoteEditPage(this.id, {super.key, this.noteEditKey});
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +25,7 @@ class NoteEditPage extends StatelessWidget {
     int signatureVer = arguments['signatureVer'] ?? currentSignatureVer;
     return NoteEdit(
       key: noteEditKey,
-      id: int.tryParse(this.id),
+      id: int.tryParse(id),
       password: password,
       signatureVer: signatureVer,
     );
@@ -40,15 +40,14 @@ class NoteEdit extends StatefulWidget {
   final ValueChanged<int?>? onNoteDeleted;
   final VoidCallback? onNoteCancelled;
 
-  NoteEdit(
-      {Key? key,
+  const NoteEdit(
+      {super.key,
       this.id,
       required this.password,
       required this.signatureVer,
       this.onNoteSaved,
       this.onNoteDeleted,
-      this.onNoteCancelled})
-      : super(key: key);
+      this.onNoteCancelled});
 
   @override
   State<StatefulWidget> createState() {
@@ -63,7 +62,7 @@ class NoteEditState extends State<NoteEdit> {
   final bodyFieldController = TextEditingController();
 
   late Future<bool> _loadNoteFuture;
-  bool _isBusy = false;
+  final bool _isBusy = false;
 
   int _selectedCategory = 0;
 
@@ -81,7 +80,7 @@ class NoteEditState extends State<NoteEdit> {
   @override
   void initState() {
     super.initState();
-    this._loadNoteFuture = _loadTheNote();
+    _loadNoteFuture = _loadTheNote();
   }
 
   @override
@@ -110,7 +109,7 @@ class NoteEditState extends State<NoteEdit> {
       _isUndoSnackbarShowing = false;
       _hasStartedEditing = false;
       _forcePop = false;
-      this._loadNoteFuture = _loadTheNote();
+      _loadNoteFuture = _loadTheNote();
     }
   }
 
@@ -240,6 +239,7 @@ class NoteEditState extends State<NoteEdit> {
         widget.password,
         version: currentSignatureVer,
       );
+      if (!mounted) return null;
       final noteService = Provider.of<NoteService>(context, listen: false);
       int? newId = widget.id;
       if (widget.id == null) {
@@ -251,6 +251,7 @@ class NoteEditState extends State<NoteEdit> {
     } catch (e) {
       log.severe("Failed to auto-save the note");
       log.severe(e.toString());
+      if (!mounted) return null;
       displaySnackBarMsg(
           context: context,
           msg: AppLocalizations.of(context)!.failedToSaveTheNote);
@@ -271,7 +272,7 @@ class NoteEditState extends State<NoteEdit> {
           Navigator.pop(context, newId);
         } else {
           setState(() {
-            this._forcePop = true;
+            _forcePop = true;
           });
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (isCancelAction) {
@@ -297,7 +298,7 @@ class NoteEditState extends State<NoteEdit> {
         Navigator.pop(context);
       } else {
         setState(() {
-          this._forcePop = true;
+          _forcePop = true;
         });
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (widget.onNoteCancelled != null) {
@@ -340,23 +341,20 @@ class NoteEditState extends State<NoteEdit> {
                 actions: _buildTitleActionButtons(widget.id),
               ),
               body: LoadingOverlay(
-                isLoading: this._isBusy,
-                child: Container(
-                  child: FutureBuilder(
+                isLoading: _isBusy,
+                child: FutureBuilder(
                     future: _loadNoteFuture,
                     builder:
                         (BuildContext context, AsyncSnapshot<bool> snapshot) {
                       if (snapshot.hasError) {
                         log.severe("Problem loading the note ${widget.id}");
                         log.severe(snapshot.error.toString());
-                        return Container(
-                            child: Center(
-                                child: Text(AppLocalizations.of(context)!
-                                    .errorLoadingNote)));
+                        return Center(
+                            child: Text(AppLocalizations.of(context)!
+                                .errorLoadingNote));
                       }
                       if (snapshot.data == null) {
-                        return Container(
-                            child: Center(child: CircularProgressIndicator()));
+                        return Center(child: CircularProgressIndicator());
                       } else if (snapshot.data! ||
                           (!snapshot.data! && widget.id == null)) {
                         return Form(
@@ -378,14 +376,12 @@ class NoteEditState extends State<NoteEdit> {
 
                       // Normally shouldn't reach here
                       log.severe("Problem loading the note ${widget.id}");
-                      return Container(
-                          child: Center(
-                              child: Text(AppLocalizations.of(context)!
-                                  .errorLoadingNote)));
+                      return Center(
+                          child: Text(AppLocalizations.of(context)!
+                              .errorLoadingNote));
                     },
                   ),
-                ),
-              ));
+                ));
         }),
       ),
     );
@@ -401,7 +397,7 @@ class NoteEditState extends State<NoteEdit> {
             tooltip: "Delete",
             onPressed: () {
               setState(() {
-                this._forcePop = true;
+                _forcePop = true;
               });
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (widget.onNoteDeleted != null) {
@@ -430,7 +426,7 @@ class NoteEditState extends State<NoteEdit> {
             autofocus: widget.id == null,
             controller: titleFieldController,
             onChanged: (value) => _onFieldChanged(),
-            decoration: new InputDecoration(
+            decoration: InputDecoration(
                 contentPadding:
                     EdgeInsets.only(left: 15, bottom: 11, top: 11, right: 15),
                 hintText: AppLocalizations.of(context)!.titleHint),
@@ -448,9 +444,9 @@ class NoteEditState extends State<NoteEdit> {
             alignedDropdown: true,
             child: DropdownButton<int>(
               value: _selectedCategory,
-              items: List<int>.generate(noteCategories.values.length, (i) => i)
+              items: List<int>.generate(NoteCategories.values.length, (i) => i)
                   .map((int value) {
-                return new DropdownMenuItem<int>(
+                return DropdownMenuItem<int>(
                   value: value,
                   child: getIconByCategory(value),
                 );
@@ -476,7 +472,7 @@ class NoteEditState extends State<NoteEdit> {
       minLines: 5,
       maxLines: null,
       autocorrect: false,
-      decoration: new InputDecoration(
+      decoration: InputDecoration(
           contentPadding:
               EdgeInsets.only(left: 15, bottom: 11, top: 11, right: 15),
           hintText: AppLocalizations.of(context)!.textToBeEncrypted),

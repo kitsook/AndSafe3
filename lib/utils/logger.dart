@@ -3,7 +3,7 @@ import 'dart:developer' as developer;
 import 'package:flutter/foundation.dart';
 import 'package:logging/logging.dart';
 
-final log = new Logger('AndSafe');
+final log = Logger('AndSafe');
 
 void setupLogger() {
   Logger.root.level = kReleaseMode ? Level.INFO : Level.ALL;

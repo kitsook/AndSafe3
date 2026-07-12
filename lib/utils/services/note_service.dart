@@ -92,7 +92,7 @@ class NoteService {
       final bool sortAscending = await Prefs.isSortAscending();
 
       final String orderBy;
-      if (sortBy == PREF_SORT_KEY_TITLE) {
+      if (sortBy == prefSortKeyTitle) {
         orderBy = 'title COLLATE NOCASE ${sortAscending ? 'ASC' : 'DESC'}, last_update DESC, _id DESC';
       } else {
         orderBy = 'last_update ${sortAscending ? 'ASC' : 'DESC'}, _id DESC';
@@ -136,7 +136,7 @@ class NoteService {
 
       if (ids.length > _sqliteMaxVariableNumber) {
         notes.sort((a, b) {
-          if (sortBy == PREF_SORT_KEY_TITLE) {
+          if (sortBy == prefSortKeyTitle) {
             final cmp = a.title.toUpperCase().compareTo(b.title.toUpperCase()) *
                 (sortAscending ? 1 : -1);
             if (cmp != 0) return cmp;
@@ -166,7 +166,7 @@ class NoteService {
         where: '_id=?',
         whereArgs: [id],
       );
-      return rows.length > 0
+      return rows.isNotEmpty
           ? Note.fromMap(rows.first as Map<String, dynamic>)
           : null;
     } catch (e, stackTrace) {

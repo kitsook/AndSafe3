@@ -105,3 +105,9 @@ To prevent UI sorting discrepancies across platforms, sorting conditions must al
 
 ### 3. Isolation Boundaries (Isolates)
 Because cryptographic functions (key derivation, encryption, decryption) are CPU-heavy, they are always executed inside background Dart isolates using the `compute()` utility. They must not run on the main UI thread to prevent stuttering.
+
+### 4. Error Handling & Resiliency Strategy
+All database helper initialization, note, and signature queries are wrapped inside structured `try-catch` blocks at the service boundary.
+* **Logging**: Catastrophic database issues (such as table creation failures, structural upgrade errors, or query locks) are logged with a severity of `severe` including the exception details and complete stack trace using service-specific logs (e.g., `NoteService`, `SignatureService`, `DatabaseHelper`).
+* **Flow Control**: Service operations log errors and immediately `rethrow` the exceptions. This ensures that caller layers (such as `AuthService` or UI pages) can handle the exception, abort ongoing multi-step processes safely, and present user-friendly Snackbars or dialogs.
+

@@ -53,7 +53,9 @@ void main() {
     });
 
     tearDown(() async {
-      await File(tempFilePath).delete().catchError((_) {});
+      try {
+        await File(tempFilePath).delete();
+      } catch (_) {}
     });
 
     test('parses signature correctly', () {
@@ -140,7 +142,9 @@ void main() {
     });
 
     tearDown(() async {
-      await File(tempFilePath).delete().catchError((_) {});
+      try {
+        await File(tempFilePath).delete();
+      } catch (_) {}
     });
 
     test('exports signature and notes to XML', () async {

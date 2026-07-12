@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:andsafe/l10n/app_localizations.dart';
-import 'package:andsafe/utils/ThemeChanger.dart';
+import 'package:andsafe/utils/theme_changer.dart';
 import 'package:andsafe/utils/notification.dart';
 import 'package:andsafe/utils/services/biometric_service.dart';
 import 'package:andsafe/utils/services/preferences_service.dart';

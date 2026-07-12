@@ -111,3 +111,12 @@ All database helper initialization, note, and signature queries are wrapped insi
 * **Logging**: Catastrophic database issues (such as table creation failures, structural upgrade errors, or query locks) are logged with a severity of `severe` including the exception details and complete stack trace using service-specific logs (e.g., `NoteService`, `SignatureService`, `DatabaseHelper`).
 * **Flow Control**: Service operations log errors and immediately `rethrow` the exceptions. This ensures that caller layers (such as `AuthService` or UI pages) can handle the exception, abort ongoing multi-step processes safely, and present user-friendly Snackbars or dialogs.
 
+---
+
+## Static Analysis & Coding Standards
+
+The project uses `flutter_lints` to enforce coding style and guidelines.
+
+* **Configuration**: The rules are configured in `analysis_options.yaml` at the project root.
+* **Baseline Settings**: To handle the existing codebase pragmatically, some lint rules are temporarily disabled in the baseline configuration to ensure a clean build and allow incremental refactoring.
+* **File Naming**: All files must follow the standard Dart `snake_case` convention. For example, the theme changing class file is named `theme_changer.dart`.

@@ -1,6 +1,6 @@
 import 'package:andsafe/config/routes/router.dart';
 import 'package:andsafe/l10n/app_localizations.dart';
-import 'package:andsafe/utils/ThemeChanger.dart';
+import 'package:andsafe/utils/theme_changer.dart';
 import 'package:andsafe/utils/logger.dart';
 import 'package:andsafe/utils/services/preferences_service.dart';
 import 'package:andsafe/utils/services/database_service.dart' as db;

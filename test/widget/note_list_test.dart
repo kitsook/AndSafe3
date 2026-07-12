@@ -2,7 +2,6 @@ import 'dart:typed_data';
 
 import 'package:andsafe/l10n/app_localizations.dart';
 import 'package:andsafe/models/note.dart';
-import 'package:andsafe/models/signature.dart';
 import 'package:andsafe/pages/note_list.dart';
 import 'package:andsafe/utils/services/note_service.dart';
 import 'package:flutter/material.dart';

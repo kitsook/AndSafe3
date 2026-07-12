@@ -5,7 +5,7 @@ import 'package:andsafe/models/note.dart';
 import 'package:andsafe/utils/category_icons.dart';
 import 'package:andsafe/utils/logger.dart';
 import 'package:andsafe/utils/notification.dart';
-import 'package:andsafe/utils/services/database_service.dart' as db;
+import 'package:andsafe/utils/services/note_service.dart';
 import 'package:andsafe/utils/services/preferences_service.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -154,18 +154,18 @@ class NoteListState extends State<NoteList> {
   }
 
   Future<int> _reloadNotes() async {
-    final adapter = Provider.of<db.DatabaseAdapter>(context, listen: false);
+    final noteService = Provider.of<NoteService>(context, listen: false);
     if (_searchFieldController.text.isEmpty) {
-      _notes = await adapter.getNotes();
+      _notes = await noteService.getNotes();
       return _notes.length;
     }
     Set<int> ids =
-        await adapter.searchNotes(_searchFieldController.text + '*');
+        await noteService.searchNotes(_searchFieldController.text + '*');
     if (ids.isEmpty) {
       _notes = <Note>[];
       return 0;
     }
-    _notes = await adapter.getNotes(ids);
+    _notes = await noteService.getNotes(ids);
     return _notes.length;
   }
 
@@ -334,14 +334,14 @@ class NoteListState extends State<NoteList> {
   }
 
   Future<void> doDeleteNote(int noteId) async {
-    final adapter = Provider.of<db.DatabaseAdapter>(context, listen: false);
-    Note? justDeleted = await adapter.getNote(noteId);
+    final noteService = Provider.of<NoteService>(context, listen: false);
+    Note? justDeleted = await noteService.getNote(noteId);
 
     SnackBarAction undoAction = SnackBarAction(
       label: AppLocalizations.of(context)!.undo,
       onPressed: () async {
         if (justDeleted != null) {
-          await adapter.insertNote(justDeleted);
+          await noteService.insertNote(justDeleted);
         }
         if (widget.onRefreshRequested != null) {
           widget.onRefreshRequested!();
@@ -351,7 +351,7 @@ class NoteListState extends State<NoteList> {
       },
     );
     if (widget.password != null) {
-      await adapter.deleteNote(noteId);
+      await noteService.deleteNote(noteId);
       if (widget.onRefreshRequested != null) {
         widget.onRefreshRequested!();
       } else {

@@ -6,7 +6,7 @@ import 'package:andsafe/models/signature.dart';
 import 'package:andsafe/utils/andsafe_crypto.dart';
 import 'package:andsafe/utils/logger.dart';
 import 'package:andsafe/utils/notification.dart';
-import 'package:andsafe/utils/services/database_service.dart' as db;
+import 'package:andsafe/utils/services/signature_service.dart';
 import 'package:flutter/material.dart';
 import 'package:loading_overlay/loading_overlay.dart';
 import 'package:provider/provider.dart';
@@ -135,8 +135,8 @@ class _SignatureInputState extends State<SignatureSetupPage> {
               passwordBytes =
                   Uint8List.fromList(utf8.encode(_password1Controller.text));
               Signature signature = await createSignature(passwordBytes);
-              final adapter = Provider.of<db.DatabaseAdapter>(context, listen: false);
-              await adapter.generateSignature(signature);
+              final signatureService = Provider.of<SignatureService>(context, listen: false);
+              await signatureService.generateSignature(signature);
 
               // signature set. proceed to load list
               Navigator.pushReplacementNamed(context, 'home',

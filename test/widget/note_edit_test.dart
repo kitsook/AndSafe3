@@ -4,22 +4,28 @@ import 'package:andsafe/l10n/app_localizations.dart';
 import 'package:andsafe/models/note.dart';
 import 'package:andsafe/models/signature.dart';
 import 'package:andsafe/pages/note_edit.dart';
-import 'package:andsafe/utils/services/database_service.dart' as db;
+import 'package:andsafe/utils/services/note_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sqflite/sqflite.dart';
 
-/// A mock DatabaseAdapter that overrides methods used by NoteEdit
-/// without connecting to a real database.
-class MockDatabaseAdapter extends db.DatabaseAdapter {
+class MockDatabase implements Database {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
+}
+
+class MockNoteService extends NoteService {
   Note? noteToReturn;
   int nextInsertId = 10;
   bool insertNoteCalled = false;
   bool updateNoteCalled = false;
   Note? lastInsertedNote;
   Note? lastUpdatedNote;
+
+  MockNoteService() : super(MockDatabase());
 
   @override
   Future<Note?> getNote(int id) async => noteToReturn;
@@ -44,24 +50,15 @@ class MockDatabaseAdapter extends db.DatabaseAdapter {
   Future<List<Note>> getNotes([Set<int> ids = const <int>{}]) async => [];
 
   @override
-  Future<void> generateSignature(Signature sig, [dynamic txn]) async {}
-
-  @override
-  Future<Signature?> getSignature() async => null;
-
-  @override
   Future<Set<int>> searchNotes(String query) async => {};
-
-  @override
-  Future<bool> isPasswordSet() async => true;
 }
 
 void main() {
-  late MockDatabaseAdapter mockAdapter;
+  late MockNoteService mockAdapter;
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});
-    mockAdapter = MockDatabaseAdapter();
+    mockAdapter = MockNoteService();
   });
 
   tearDown(() {
@@ -75,7 +72,7 @@ void main() {
     ValueChanged<int?>? onNoteDeleted,
     VoidCallback? onNoteCancelled,
   }) {
-    return Provider<db.DatabaseAdapter>.value(
+    return Provider<NoteService>.value(
       value: mockAdapter,
       child: MaterialApp(
         localizationsDelegates: [

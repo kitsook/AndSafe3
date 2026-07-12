@@ -4,6 +4,8 @@ import 'package:andsafe/utils/ThemeChanger.dart';
 import 'package:andsafe/utils/logger.dart';
 import 'package:andsafe/utils/services/preferences_service.dart';
 import 'package:andsafe/utils/services/database_service.dart' as db;
+import 'package:andsafe/utils/services/note_service.dart';
+import 'package:andsafe/utils/services/signature_service.dart';
 import 'package:flag_secure/flag_secure.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -15,25 +17,29 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   AndSafeRouter.setupRouter();
 
-  String theme = await Prefs.getSelectedTheme();
-  ThemeMode themeMode = theme == PREF_THEME_LIGHT
+  final String theme = await Prefs.getSelectedTheme();
+  final ThemeMode themeMode = theme == PREF_THEME_LIGHT
       ? ThemeMode.light
       : theme == PREF_THEME_DARK
           ? ThemeMode.dark
           : ThemeMode.system;
 
-  final databaseAdapter = db.DatabaseAdapter();
-  bool isPasswordSet = await databaseAdapter.isPasswordSet();
+  final dbHelper = db.DatabaseHelper();
+  final database = await dbHelper.getDatabase();
+  final noteService = NoteService(database);
+  final signatureService = SignatureService(database);
+  final bool isPasswordSet = await signatureService.isPasswordSet();
 
-  runApp(MyApp(themeMode, isPasswordSet, databaseAdapter));
+  runApp(MyApp(themeMode, isPasswordSet, noteService, signatureService));
 }
 
 class MyApp extends StatelessWidget {
   final ThemeMode themeMode;
   final bool isPasswordSet;
-  final db.DatabaseAdapter databaseAdapter;
+  final NoteService noteService;
+  final SignatureService signatureService;
 
-  MyApp(this.themeMode, this.isPasswordSet, this.databaseAdapter);
+  MyApp(this.themeMode, this.isPasswordSet, this.noteService, this.signatureService);
 
   Future<void> _setFlagSecure() async {
     try {
@@ -51,7 +57,8 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeChanger(themeMode)),
-        Provider<db.DatabaseAdapter>.value(value: databaseAdapter),
+        Provider<NoteService>.value(value: noteService),
+        Provider<SignatureService>.value(value: signatureService),
       ],
       child: Consumer<ThemeChanger>(builder: (_, themeChanger, __) {
         return MaterialApp(

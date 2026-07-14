@@ -9,27 +9,27 @@ void main() {
 
   group('Prefs.sortBy', () {
     test('defaults to title when not set', () async {
-      expect(await Prefs.getSortBy(), PREF_SORT_KEY_TITLE);
+      expect(await Prefs.getSortBy(), prefSortKeyTitle);
     });
 
     test('returns valid sort key when set', () async {
-      await Prefs.setSortBy(PREF_SORT_KEY_LAST_UPDATE);
-      expect(await Prefs.getSortBy(), PREF_SORT_KEY_LAST_UPDATE);
+      await Prefs.setSortBy(prefSortKeyLastUpdate);
+      expect(await Prefs.getSortBy(), prefSortKeyLastUpdate);
     });
 
     test('rejects invalid sort key and defaults to title', () async {
       await Prefs.setSortBy('invalid_key');
-      expect(await Prefs.getSortBy(), PREF_SORT_KEY_TITLE);
+      expect(await Prefs.getSortBy(), prefSortKeyTitle);
     });
 
     test('round-trip title', () async {
-      await Prefs.setSortBy(PREF_SORT_KEY_TITLE);
-      expect(await Prefs.getSortBy(), PREF_SORT_KEY_TITLE);
+      await Prefs.setSortBy(prefSortKeyTitle);
+      expect(await Prefs.getSortBy(), prefSortKeyTitle);
     });
 
     test('round-trip last_update', () async {
-      await Prefs.setSortBy(PREF_SORT_KEY_LAST_UPDATE);
-      expect(await Prefs.getSortBy(), PREF_SORT_KEY_LAST_UPDATE);
+      await Prefs.setSortBy(prefSortKeyLastUpdate);
+      expect(await Prefs.getSortBy(), prefSortKeyLastUpdate);
     });
   });
 
@@ -49,25 +49,25 @@ void main() {
 
   group('Prefs.theme', () {
     test('defaults to system when not set', () async {
-      expect(await Prefs.getSelectedTheme(), PREF_THEME_SYSTEM);
+      expect(await Prefs.getSelectedTheme(), prefThemeSystem);
     });
 
     test('returns valid theme when set', () async {
-      await Prefs.setSelectedTheme(PREF_THEME_LIGHT);
-      expect(await Prefs.getSelectedTheme(), PREF_THEME_LIGHT);
+      await Prefs.setSelectedTheme(prefThemeLight);
+      expect(await Prefs.getSelectedTheme(), prefThemeLight);
 
-      await Prefs.setSelectedTheme(PREF_THEME_DARK);
-      expect(await Prefs.getSelectedTheme(), PREF_THEME_DARK);
+      await Prefs.setSelectedTheme(prefThemeDark);
+      expect(await Prefs.getSelectedTheme(), prefThemeDark);
     });
 
     test('rejects invalid theme and defaults to system', () async {
       await Prefs.setSelectedTheme('invalid_theme');
-      expect(await Prefs.getSelectedTheme(), PREF_THEME_SYSTEM);
+      expect(await Prefs.getSelectedTheme(), prefThemeSystem);
     });
 
     test('round-trip system', () async {
-      await Prefs.setSelectedTheme(PREF_THEME_SYSTEM);
-      expect(await Prefs.getSelectedTheme(), PREF_THEME_SYSTEM);
+      await Prefs.setSelectedTheme(prefThemeSystem);
+      expect(await Prefs.getSelectedTheme(), prefThemeSystem);
     });
   });
 
@@ -115,14 +115,14 @@ void main() {
 
   group('constants', () {
     test('sort key constants', () {
-      expect(PREF_SORT_KEY_TITLE, 'title');
-      expect(PREF_SORT_KEY_LAST_UPDATE, 'last_update');
+      expect(prefSortKeyTitle, 'title');
+      expect(prefSortKeyLastUpdate, 'last_update');
     });
 
     test('theme constants', () {
-      expect(PREF_THEME_SYSTEM, 'system');
-      expect(PREF_THEME_LIGHT, 'light');
-      expect(PREF_THEME_DARK, 'dark');
+      expect(prefThemeSystem, 'system');
+      expect(prefThemeLight, 'light');
+      expect(prefThemeDark, 'dark');
     });
   });
 }

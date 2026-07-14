@@ -1,95 +1,95 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
-const PREF_SORT_KEY_TITLE = 'title';
-const PREF_SORT_KEY_LAST_UPDATE = 'last_update';
-const PREF_THEME_SYSTEM = 'system';
-const PREF_THEME_LIGHT = 'light';
-const PREF_THEME_DARK = 'dark';
+const prefSortKeyTitle = 'title';
+const prefSortKeyLastUpdate = 'last_update';
+const prefThemeSystem = 'system';
+const prefThemeLight = 'light';
+const prefThemeDark = 'dark';
 
-const String _PREF_KEY_SORT = 'SelectedSorting';
-const String _PREF_KEY_SORT_ASCENDING = 'SelectedSortAscending';
-const String _PREF_KEY_THEME = 'SelectedTheme';
-const String _PREF_KEY_SWIPE_TO_DELETE = 'SwipeToDelete';
-const String _PREF_KEY_BIOMETRIC_ENABLED = 'BiometricEnabled';
-const String _PREF_KEY_BIOMETRIC_OFFERED = 'BiometricOffered';
+const String _prefKeySort = 'SelectedSorting';
+const String _prefKeySortAscending = 'SelectedSortAscending';
+const String _prefKeyTheme = 'SelectedTheme';
+const String _prefKeySwipeToDelete = 'SwipeToDelete';
+const String _prefKeyBiometricEnabled = 'BiometricEnabled';
+const String _prefKeyBiometricOffered = 'BiometricOffered';
 
 _PreferenceService _prefService = _PreferenceService();
 
 class Prefs {
-  /// Resets the preference service singleton. Used to clear cached Future<SharedPreferences>
+  /// Resets the preference service singleton. Used to clear cached `Future<SharedPreferences>`
   /// across test boundaries when mocks are re-registered.
   static void resetForTesting() {
     _prefService = _PreferenceService();
   }
 
   static Future<String> getSortBy() async {
-    String sortBy = await _prefService.getString(_PREF_KEY_SORT);
-    if (sortBy == PREF_SORT_KEY_TITLE || sortBy == PREF_SORT_KEY_LAST_UPDATE) {
+    String sortBy = await _prefService.getString(_prefKeySort);
+    if (sortBy == prefSortKeyTitle || sortBy == prefSortKeyLastUpdate) {
       return sortBy;
     } else {
-      return PREF_SORT_KEY_TITLE;
+      return prefSortKeyTitle;
     }
   }
 
   static Future<void> setSortBy(String sortBy) async {
-    if (sortBy != PREF_SORT_KEY_TITLE && sortBy != PREF_SORT_KEY_LAST_UPDATE) {
-      await _prefService.setString(_PREF_KEY_SORT, PREF_SORT_KEY_TITLE);
+    if (sortBy != prefSortKeyTitle && sortBy != prefSortKeyLastUpdate) {
+      await _prefService.setString(_prefKeySort, prefSortKeyTitle);
     } else {
-      await _prefService.setString(_PREF_KEY_SORT, sortBy);
+      await _prefService.setString(_prefKeySort, sortBy);
     }
   }
 
   static Future<bool> isSortAscending() async {
-    return await _prefService.getBool(_PREF_KEY_SORT_ASCENDING);
+    return await _prefService.getBool(_prefKeySortAscending);
   }
 
   static Future<void> setSortAscending(bool sortAscending) async {
-    await _prefService.setBool(_PREF_KEY_SORT_ASCENDING, sortAscending);
+    await _prefService.setBool(_prefKeySortAscending, sortAscending);
   }
 
   static Future<String> getSelectedTheme() async {
-    String theTheme = await _prefService.getString(_PREF_KEY_THEME);
-    if (theTheme == PREF_THEME_SYSTEM ||
-        theTheme == PREF_THEME_LIGHT ||
-        theTheme == PREF_THEME_DARK) {
+    String theTheme = await _prefService.getString(_prefKeyTheme);
+    if (theTheme == prefThemeSystem ||
+        theTheme == prefThemeLight ||
+        theTheme == prefThemeDark) {
       return theTheme;
     } else {
-      return PREF_THEME_SYSTEM;
+      return prefThemeSystem;
     }
   }
 
   static Future<void> setSelectedTheme(String theTheme) async {
-    if (theTheme == PREF_THEME_SYSTEM ||
-        theTheme == PREF_THEME_LIGHT ||
-        theTheme == PREF_THEME_DARK) {
-      await _prefService.setString(_PREF_KEY_THEME, theTheme);
+    if (theTheme == prefThemeSystem ||
+        theTheme == prefThemeLight ||
+        theTheme == prefThemeDark) {
+      await _prefService.setString(_prefKeyTheme, theTheme);
     } else {
-      await _prefService.setString(_PREF_KEY_THEME, PREF_THEME_SYSTEM);
+      await _prefService.setString(_prefKeyTheme, prefThemeSystem);
     }
   }
 
   static Future<bool> getSwipeToDelete() async {
-    return await _prefService.getBool(_PREF_KEY_SWIPE_TO_DELETE);
+    return await _prefService.getBool(_prefKeySwipeToDelete);
   }
 
   static Future<void> setSwipeToDelete(bool swipeToDelete) async {
-    await _prefService.setBool(_PREF_KEY_SWIPE_TO_DELETE, swipeToDelete);
+    await _prefService.setBool(_prefKeySwipeToDelete, swipeToDelete);
   }
 
   static Future<bool> getBiometricEnabled() async {
-    return await _prefService.getBoolDefault(_PREF_KEY_BIOMETRIC_ENABLED, false);
+    return await _prefService.getBoolDefault(_prefKeyBiometricEnabled, false);
   }
 
   static Future<void> setBiometricEnabled(bool enabled) async {
-    await _prefService.setBool(_PREF_KEY_BIOMETRIC_ENABLED, enabled);
+    await _prefService.setBool(_prefKeyBiometricEnabled, enabled);
   }
 
   static Future<bool> getBiometricOffered() async {
-    return await _prefService.getBoolDefault(_PREF_KEY_BIOMETRIC_OFFERED, false);
+    return await _prefService.getBoolDefault(_prefKeyBiometricOffered, false);
   }
 
   static Future<void> setBiometricOffered(bool offered) async {
-    await _prefService.setBool(_PREF_KEY_BIOMETRIC_OFFERED, offered);
+    await _prefService.setBool(_prefKeyBiometricOffered, offered);
   }
 }
 
@@ -106,7 +106,7 @@ class _PreferenceService {
 
   Future<String> getString(String key) async {
     try {
-      SharedPreferences prefs = await this._prefs!;
+      SharedPreferences prefs = await _prefs!;
       return prefs.getString(key) ?? "";
     } catch (e) {
       return "";
@@ -115,7 +115,7 @@ class _PreferenceService {
 
   Future<void> setString(String key, String value) async {
     try {
-      SharedPreferences prefs = await this._prefs!;
+      SharedPreferences prefs = await _prefs!;
       prefs.setString(key, value);
     } catch (e) {
       // ignore
@@ -124,7 +124,7 @@ class _PreferenceService {
 
   Future<int> getInt(String key) async {
     try {
-      SharedPreferences prefs = await this._prefs!;
+      SharedPreferences prefs = await _prefs!;
       return prefs.getInt(key) ?? 0;
     } catch (e) {
       return 0;
@@ -133,7 +133,7 @@ class _PreferenceService {
 
   Future<void> setInt(String key, int value) async {
     try {
-      SharedPreferences prefs = await this._prefs!;
+      SharedPreferences prefs = await _prefs!;
       prefs.setInt(key, value);
     } catch (e) {
       // ignore
@@ -142,7 +142,7 @@ class _PreferenceService {
 
   Future<bool> getBool(String key) async {
     try {
-      SharedPreferences prefs = await this._prefs!;
+      SharedPreferences prefs = await _prefs!;
       return prefs.getBool(key) ?? true;
     } catch (e) {
       return true;
@@ -151,7 +151,7 @@ class _PreferenceService {
 
   Future<bool> getBoolDefault(String key, bool defaultValue) async {
     try {
-      SharedPreferences prefs = await this._prefs!;
+      SharedPreferences prefs = await _prefs!;
       return prefs.getBool(key) ?? defaultValue;
     } catch (e) {
       return defaultValue;
@@ -160,7 +160,7 @@ class _PreferenceService {
 
   Future<void> setBool(String key, bool value) async {
     try {
-      SharedPreferences prefs = await this._prefs!;
+      SharedPreferences prefs = await _prefs!;
       prefs.setBool(key, value);
     } catch (e) {
       // ignore

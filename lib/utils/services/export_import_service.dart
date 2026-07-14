@@ -17,7 +17,7 @@ Tuple2<Signature, List<Note>> parseNotesFromFile(String theFileName) {
   List<Note> importedNotes = [];
   Signature importedSignature;
 
-  final File file = new File(theFileName);
+  final File file = File(theFileName);
   final XmlDocument document = XmlDocument.parse(file.readAsStringSync());
 
   // parse signature
@@ -152,7 +152,7 @@ Future<String?> getNewExportFullFilePath() async {
 
 String _newExportFileName() {
   final DateFormat formatter = DateFormat('yyyyMMdd_HHmmss');
-  return 'AndSafe' + formatter.format(DateTime.now()) + '.xml';
+  return 'AndSafe${formatter.format(DateTime.now())}.xml';
 }
 
 Signature _parseSignatureRow(XmlElement row) {
@@ -161,32 +161,32 @@ Signature _parseSignatureRow(XmlElement row) {
         .findElements('col')
         .where((node) => node.getAttribute('name') == '_id')
         .first
-        .text),
+        .innerText),
     row
         .findElements('col')
         .where((node) => node.getAttribute('name') == 'plain')
         .first
-        .text,
+        .innerText,
     row
         .findElements('col')
         .where((node) => node.getAttribute('name') == 'payload')
         .first
-        .text,
+        .innerText,
     hex.decode(row
         .findElements('col')
         .where((node) => node.getAttribute('name') == 'salt')
         .first
-        .text) as Uint8List,
+        .innerText) as Uint8List,
     hex.decode(row
         .findElements('col')
         .where((node) => node.getAttribute('name') == 'iv')
         .first
-        .text) as Uint8List,
+        .innerText) as Uint8List,
     int.parse(row
         .findElements('col')
         .where((node) => node.getAttribute('name') == 'ver')
         .first
-        .text),
+        .innerText),
   );
 }
 
@@ -196,36 +196,36 @@ Note _parseNoteRow(XmlElement row) {
         .findElements('col')
         .where((node) => node.getAttribute('name') == '_id')
         .first
-        .text),
+        .innerText),
     int.parse(row
         .findElements('col')
         .where((node) => node.getAttribute('name') == 'cat_id')
         .first
-        .text),
+        .innerText),
     row
         .findElements('col')
         .where((node) => node.getAttribute('name') == 'title')
         .first
-        .text,
+        .innerText,
     row
         .findElements('col')
         .where((node) => node.getAttribute('name') == 'body')
         .first
-        .text,
+        .innerText,
     hex.decode(row
         .findElements('col')
         .where((node) => node.getAttribute('name') == 'salt')
         .first
-        .text) as Uint8List,
+        .innerText) as Uint8List,
     hex.decode(row
         .findElements('col')
         .where((node) => node.getAttribute('name') == 'iv')
         .first
-        .text) as Uint8List,
+        .innerText) as Uint8List,
     DateTime.parse(row
         .findElements('col')
         .where((node) => node.getAttribute('name') == 'last_update')
         .first
-        .text),
+        .innerText),
   );
 }

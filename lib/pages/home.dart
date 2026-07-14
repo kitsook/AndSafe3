@@ -17,8 +17,10 @@ import 'package:loading_overlay/loading_overlay.dart';
 import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+
   @override
-  _HomePageState createState() => _HomePageState();
+  State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
@@ -67,10 +69,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.detached) {
-      if (this._password != null) {
-        this._password!.fillRange(0, this._password!.length, 0);
+      if (_password != null) {
+        _password!.fillRange(0, _password!.length, 0);
         setState(() {
-          this._password = null;
+          _password = null;
         });
       }
     }
@@ -226,7 +228,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       onOpenSettings: () {
         Navigator.of(context).pop();
         Navigator.pushNamed(context, 'settings/change',
-                arguments: {'password': this._password})
+                arguments: {'password': _password})
             .whenComplete(() {
           setState(() {
             _refreshCounter++;
@@ -236,13 +238,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       onChangePassword: () {
         Navigator.of(context).pop();
         Navigator.pushNamed(context, 'password/change').then((value) {
+          if (!mounted) return;
           if (value != null && value as bool) {
             displaySnackBarMsg(
                 context: context,
                 msg: AppLocalizations.of(context)!.passwordChanged);
             setState(() {
-              this._password?.fillRange(0, this._password!.length, 0);
-              this._password = null;
+              _password?.fillRange(0, _password!.length, 0);
+              _password = null;
               _refreshCounter++;
             });
             _authService.displayPasswordInputDialog();
@@ -252,6 +255,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 msg: AppLocalizations.of(context)!.passwordNotChanged);
           }
         }).onError((error, stackTrace) {
+          if (!mounted) return;
           displaySnackBarMsg(
               context: context,
               msg: AppLocalizations.of(context)!.passwordNotChanged);
@@ -260,7 +264,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       onImportNotes: () {
         Navigator.of(context).pop();
         Navigator.pushNamed(context, 'import',
-                arguments: {'password': this._password})
+                arguments: {'password': _password})
             .whenComplete(() {
           setState(() {
             _refreshCounter++;
@@ -271,6 +275,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         try {
           String? exportFileName = await getNewExportFullFilePath();
           log.fine('Target export file: $exportFileName');
+          if (!mounted) return;
           if (exportFileName == null) {
             log.severe('Failed to generate an export file name');
             displaySnackBarMsg(
@@ -282,13 +287,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           final noteService = Provider.of<NoteService>(context, listen: false);
           final signatureService = Provider.of<SignatureService>(context, listen: false);
           final signature = await signatureService.getSignature();
+          if (!mounted) return;
           if (signature == null) {
             throw Exception('No signature found');
           }
-          await exportNotes(
-              exportFileName,
-              signature,
-              await noteService.getNotes());
+          final notes = await noteService.getNotes();
+          await exportNotes(exportFileName, signature, notes);
+          if (!mounted) return;
           displaySnackBarMsg(
               context: context,
               msg: AppLocalizations.of(context)!.exportedToFile +
@@ -296,6 +301,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         } catch (e) {
           log.severe('Failed to export notes');
           log.severe(e);
+          if (!mounted) return;
           displaySnackBarMsg(
               context: context,
               msg: AppLocalizations.of(context)!.failedToExport);

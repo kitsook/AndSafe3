@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:andsafe/models/note.dart';
 import 'package:andsafe/models/signature.dart' as sig;
 import 'package:andsafe/utils/andsafe_crypto.dart';
 

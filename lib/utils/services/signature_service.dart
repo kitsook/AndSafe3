@@ -12,7 +12,7 @@ class SignatureService {
   Future<bool> isPasswordSet() async {
     try {
       List<Map> rows = await db.rawQuery('SELECT COUNT(1) AS num FROM signature');
-      if (rows.length == 0) {
+      if (rows.isEmpty) {
         return false;
       }
       return rows[0]['num'] as int == 1;
@@ -52,7 +52,7 @@ class SignatureService {
         'signature',
         limit: 1,
       );
-      return rows.length > 0
+      return rows.isNotEmpty
           ? Signature.fromMap(rows.first as Map<String, dynamic>)
           : null;
     } catch (e, stackTrace) {

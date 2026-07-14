@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:andsafe/l10n/app_localizations.dart';
-import 'package:andsafe/utils/ThemeChanger.dart';
+import 'package:andsafe/utils/theme_changer.dart';
 import 'package:andsafe/utils/notification.dart';
 import 'package:andsafe/utils/services/biometric_service.dart';
 import 'package:andsafe/utils/services/preferences_service.dart';
@@ -9,6 +9,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class ChangeSettingsPage extends StatefulWidget {
+  const ChangeSettingsPage({super.key});
+
   @override
   State<StatefulWidget> createState() {
     return _ChangeSettingsPageState();
@@ -17,7 +19,7 @@ class ChangeSettingsPage extends StatefulWidget {
 
 class _ChangeSettingsPageState extends State {
   final _formKey = GlobalKey<FormState>();
-  String _theme = PREF_THEME_SYSTEM;
+  String _theme = prefThemeSystem;
   bool _swipeToDelete = true;
   bool _biometricEnabled = false;
   bool _biometricAvailable = false;
@@ -38,13 +40,13 @@ class _ChangeSettingsPageState extends State {
 
   void _loadPrefs() {
     Prefs.getSelectedTheme()
-        .then((value) => this._theme = value)
+        .then((value) => _theme = value)
         .then((_) => Prefs.getSwipeToDelete())
-        .then((value) => this._swipeToDelete = value)
+        .then((value) => _swipeToDelete = value)
         .then((_) => Prefs.getBiometricEnabled())
-        .then((value) => this._biometricEnabled = value)
+        .then((value) => _biometricEnabled = value)
         .then((_) => _biometricService.isBiometricAvailable())
-        .then((value) => this._biometricAvailable = value)
+        .then((value) => _biometricAvailable = value)
         .then((_) {
       setState(() {});
     });
@@ -94,21 +96,16 @@ class _ChangeSettingsPageState extends State {
           leading: Icon(Icons.palette_rounded),
           title: Text(AppLocalizations.of(context)!.themeSetting),
         ),
-        new Container(
+        Container(
           height: 8.0,
         ),
         ToggleButtons(
-          children: [
-            Icon(Icons.settings_rounded),
-            Icon(Icons.wb_sunny_rounded),
-            Icon(Icons.nightlight_round),
-          ],
           onPressed: (index) {
             switch (index) {
               case 0:
                 {
-                  Prefs.setSelectedTheme(PREF_THEME_SYSTEM).then((_) {
-                    this._theme = PREF_THEME_SYSTEM;
+                  Prefs.setSelectedTheme(prefThemeSystem).then((_) {
+                    _theme = prefThemeSystem;
                   });
                   Provider.of<ThemeChanger>(context, listen: false).themeMode =
                       ThemeMode.system;
@@ -117,8 +114,8 @@ class _ChangeSettingsPageState extends State {
 
               case 1:
                 {
-                  Prefs.setSelectedTheme(PREF_THEME_LIGHT).then((_) {
-                    this._theme = PREF_THEME_LIGHT;
+                  Prefs.setSelectedTheme(prefThemeLight).then((_) {
+                    _theme = prefThemeLight;
                   });
                   Provider.of<ThemeChanger>(context, listen: false).themeMode =
                       ThemeMode.light;
@@ -127,8 +124,8 @@ class _ChangeSettingsPageState extends State {
 
               case 2:
                 {
-                  Prefs.setSelectedTheme(PREF_THEME_DARK).then((_) {
-                    this._theme = PREF_THEME_DARK;
+                  Prefs.setSelectedTheme(prefThemeDark).then((_) {
+                    _theme = prefThemeDark;
                   });
                   Provider.of<ThemeChanger>(context, listen: false).themeMode =
                       ThemeMode.dark;
@@ -137,8 +134,8 @@ class _ChangeSettingsPageState extends State {
 
               default:
                 {
-                  Prefs.setSelectedTheme(PREF_THEME_SYSTEM).then((_) {
-                    this._theme = PREF_THEME_SYSTEM;
+                  Prefs.setSelectedTheme(prefThemeSystem).then((_) {
+                    _theme = prefThemeSystem;
                   });
                   Provider.of<ThemeChanger>(context, listen: false).themeMode =
                       ThemeMode.system;
@@ -146,9 +143,14 @@ class _ChangeSettingsPageState extends State {
             }
           },
           isSelected: [
-            this._theme == PREF_THEME_SYSTEM,
-            this._theme == PREF_THEME_LIGHT,
-            this._theme == PREF_THEME_DARK,
+            _theme == prefThemeSystem,
+            _theme == prefThemeLight,
+            _theme == prefThemeDark,
+          ],
+          children: [
+            Icon(Icons.settings_rounded),
+            Icon(Icons.wb_sunny_rounded),
+            Icon(Icons.nightlight_round),
           ],
         ),
       ],
@@ -164,7 +166,7 @@ class _ChangeSettingsPageState extends State {
           onChanged: (value) {
             setState(() {
               Prefs.setSwipeToDelete(value).then((_) {
-                this._swipeToDelete = value;
+                _swipeToDelete = value;
               });
             });
           }),

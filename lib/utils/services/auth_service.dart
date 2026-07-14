@@ -35,6 +35,7 @@ class AuthService {
   Future<void> attemptBiometricUnlock() async {
     final bool biometricEnabled = await _biometricService.isBiometricEnabled();
     if (biometricEnabled) {
+      if (!context.mounted) return;
       setState(() {
         setIsBusy(true);
       });
@@ -101,14 +102,18 @@ class AuthService {
       final noteService = Provider.of<NoteService>(context, listen: false);
       final signatureService = Provider.of<SignatureService>(context, listen: false);
       await migrateAllNotes(noteService, signatureService, passwordBytes, oldVer, (current, total) async {
+        if (!context.mounted) return;
         migrationProgressNotifier.value =
             AppLocalizations.of(context)!.migratingNote(current, total);
       });
       log.fine(
           "Migration from ver=$oldVer to ver=$currentSignatureVer completed");
+      if (!context.mounted) return;
       Navigator.of(context).pop();
     } catch (e) {
-      Navigator.of(context).pop();
+      if (context.mounted) {
+        Navigator.of(context).pop();
+      }
       log.severe("Migration failed, DB rolled back");
       log.severe(e.toString());
       rethrow;
@@ -187,10 +192,11 @@ class AuthService {
     final bool biometricEnabled = await _biometricService.isBiometricEnabled();
 
     while (true) {
-      var _controller = TextEditingController();
+      var controller = TextEditingController();
       enteredPassword = null;
       biometricPressed = null;
 
+      if (!context.mounted) return;
       await showDialog(
         context: context,
         builder: (context) {
@@ -200,14 +206,14 @@ class AuthService {
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextField(
-                  controller: _controller,
+                  controller: controller,
                   decoration: InputDecoration(
                     labelText:
                         AppLocalizations.of(context)!.passwordToDecryptYourNotes,
                     suffixIcon: IconButton(
                       icon: Icon(Icons.arrow_right_alt_rounded),
                       onPressed: () {
-                        enteredPassword = _controller.text;
+                        enteredPassword = controller.text;
                         Navigator.pop(context);
                       },
                     ),
@@ -245,6 +251,7 @@ class AuthService {
       }
 
       if (biometricPressed == true) {
+        if (!context.mounted) continue;
         setState(() {
           setIsBusy(true);
         });
@@ -255,24 +262,29 @@ class AuthService {
             AppLocalizations.of(context)!.biometricReason,
           );
 
+          if (!context.mounted) continue;
           if (passwordBytes != null) {
             final success = await unlockWithPassword(passwordBytes);
+            if (!context.mounted) continue;
             if (success) {
               return;
             } else {
               passwordBytes.fillRange(0, passwordBytes.length, 0);
               await _biometricService.clearStoredPassword();
+              if (!context.mounted) continue;
               displaySnackBarMsg(
                   context: context,
                   msg: AppLocalizations.of(context)!.biometricFailed);
             }
           } else {
+            if (!context.mounted) continue;
             displaySnackBarMsg(
                 context: context,
                 msg: AppLocalizations.of(context)!.biometricFailed);
           }
         } catch (e) {
           log.warning('Biometric unlock from password dialog failed: $e');
+          if (!context.mounted) continue;
           displaySnackBarMsg(
               context: context,
               msg: AppLocalizations.of(context)!.biometricFailed);
@@ -284,6 +296,7 @@ class AuthService {
         continue;
       }
 
+      if (!context.mounted) return;
       setState(() {
         setIsBusy(true);
       });
@@ -292,6 +305,7 @@ class AuthService {
       try {
         passwordBytes = Uint8List.fromList(utf8.encode(enteredPassword!));
         final success = await unlockWithPassword(passwordBytes);
+        if (!context.mounted) return;
         if (success) {
           return;
         } else {
@@ -304,6 +318,7 @@ class AuthService {
         passwordBytes?.fillRange(0, passwordBytes.length, 0);
         log.severe("Failed to verify password");
         log.severe(e.toString());
+        if (!context.mounted) return;
         displaySnackBarMsg(
             context: context,
             msg: AppLocalizations.of(context)!.failedToVerifyPassword);

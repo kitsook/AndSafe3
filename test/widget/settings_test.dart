@@ -1,6 +1,6 @@
 import 'package:andsafe/l10n/app_localizations.dart';
 import 'package:andsafe/pages/settings.dart';
-import 'package:andsafe/utils/ThemeChanger.dart';
+import 'package:andsafe/utils/theme_changer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';

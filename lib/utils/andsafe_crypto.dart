@@ -51,7 +51,7 @@ Future<sig.Signature> createSignature(Uint8List password) async {
   final String plainText = _generateRandomString(_signatureLength);
 
   log.fine("Going to generate signature");
-  Map data = Map();
+  Map data = {};
   data['plainText'] = plainText;
   data['password'] = password;
   data['salt'] = salt;
@@ -79,7 +79,7 @@ Future<bool> verifySignature(
     return false;
   }
 
-  Map data = Map();
+  Map data = {};
   data['payload'] = signature.payload;
   data['plain'] = signature.plain;
   data['password'] = password;
@@ -97,7 +97,7 @@ Future<Note> createNote(
   final Uint8List iv = _generateRandomBytes(_aesIvLength);
 
   log.fine("Going to create an encrypted note");
-  Map data = Map();
+  Map data = {};
   data['plainText'] = plainText;
   data['password'] = password;
   data['salt'] = salt;
@@ -121,7 +121,7 @@ Future<Note> createNote(
 Future<String> getNotePlainBody(
     Note note, Uint8List password, {required int version}) async {
   log.fine("Going to decrypt note body");
-  Map data = Map();
+  Map data = {};
   data['ciphertext'] = hexStringToBytes(note.body);
   data['password'] = password;
   data['salt'] = note.salt;
@@ -190,11 +190,11 @@ Future<bool> _computeSignatureAndCompare(Map data) async {
   final int version = data['version'];
 
   try {
-    if (payload.length == 0) {
+    if (payload.isEmpty) {
       return false;
     }
 
-    Map data = Map();
+    Map data = {};
     data['plainText'] = plain;
     data['password'] = password;
     data['salt'] = salt;

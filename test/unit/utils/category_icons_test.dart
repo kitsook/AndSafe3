@@ -10,9 +10,9 @@ Widget buildTestable(Widget child) {
 }
 
 void main() {
-  group('noteCategories enum', () {
+  group('NoteCategories enum', () {
     test('has 10 categories', () {
-      expect(noteCategories.values.length, 10);
+      expect(NoteCategories.values.length, 10);
     });
   });
 

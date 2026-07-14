@@ -23,14 +23,12 @@ class DatabaseHelper {
           try {
             // create tables on first run
             await db.execute(
-                'create table notes (_id integer primary key autoincrement, cat_id integer not null, ' +
-                    'title text not null, body text not null, salt blob, iv blob, last_update date);');
+                'create table notes (_id integer primary key autoincrement, cat_id integer not null, ' 'title text not null, body text not null, salt blob, iv blob, last_update date);');
             await db.execute(
-                'create table signature (_id integer primary key autoincrement, plain text, payload text, ' +
-                    'salt blob, iv blob, ver integer);');
+                'create table signature (_id integer primary key autoincrement, plain text, payload text, ' 'salt blob, iv blob, ver integer);');
 
             await db
-                .execute('create virtual table searchable ' + 'using fts3 (title)');
+                .execute('create virtual table searchable ' 'using fts3 (title)');
             await db.execute(
                 'create index idx_notes_title_nocase on notes(title collate nocase);');
             await db.execute(
@@ -46,7 +44,7 @@ class DatabaseHelper {
               // add virtual table for search function
               await db.transaction((txn) async {
                 await txn.execute(
-                    'create virtual table searchable ' + 'using fts3 (title)');
+                    'create virtual table searchable ' 'using fts3 (title)');
                 await txn.rawQuery(
                     'insert into searchable (docid, title) select _id, title from notes;');
               });
@@ -54,9 +52,7 @@ class DatabaseHelper {
               // update signature. use KCV concept and only store part of the encrypted payload
               await db.transaction((txn) async {
                 await txn.rawQuery(
-                    'update signature set payload = substr(payload, 1, ' +
-                        (signatureKeyCheckValueLengthInByte * 2).toString() +
-                        ');');
+                    'update signature set payload = substr(payload, 1, ${signatureKeyCheckValueLengthInByte * 2});');
                 await txn.update('signature', {'ver': currentSignatureVer});
               });
             }

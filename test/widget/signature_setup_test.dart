@@ -139,5 +139,45 @@ void main() {
       // Second field should show mismatch error (non-empty vs empty first field)
       expect(find.text('The two passwords do not match'), findsOneWidget);
     });
+
+    testWidgets('toggles password visibility when eye icon is clicked',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(buildTestApp());
+      await tester.pumpAndSettle();
+
+      // Find the TextFormFields/TextFields
+      final fieldsFinder = find.byType(TextField);
+      expect(fieldsFinder, findsNWidgets(2));
+
+      // Get the obscureText properties initially
+      TextField field1 = tester.widget<TextField>(fieldsFinder.at(0));
+      TextField field2 = tester.widget<TextField>(fieldsFinder.at(1));
+      expect(field1.obscureText, isTrue);
+      expect(field2.obscureText, isTrue);
+
+      // Find the visibility icon buttons.
+      final visibilityIcons = find.byIcon(Icons.visibility);
+      expect(visibilityIcons, findsNWidgets(2));
+
+      // Tap the first eye icon button
+      await tester.tap(visibilityIcons.at(0));
+      await tester.pumpAndSettle();
+
+      // Verify first is visible, second is still obscured
+      field1 = tester.widget<TextField>(fieldsFinder.at(0));
+      field2 = tester.widget<TextField>(fieldsFinder.at(1));
+      expect(field1.obscureText, isFalse);
+      expect(field2.obscureText, isTrue);
+
+      // Tap it again (now it has Icons.visibility_off)
+      final visibilityOffIcons = find.byIcon(Icons.visibility_off);
+      expect(visibilityOffIcons, findsOneWidget);
+      await tester.tap(visibilityOffIcons);
+      await tester.pumpAndSettle();
+
+      // Verify it is obscured again
+      field1 = tester.widget<TextField>(fieldsFinder.at(0));
+      expect(field1.obscureText, isTrue);
+    });
   });
 }

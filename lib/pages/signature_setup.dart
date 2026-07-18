@@ -27,6 +27,8 @@ class _SignatureInputState extends State<SignatureSetupPage> {
   final _password2Controller = TextEditingController();
 
   bool _isBusy = false;
+  bool _obscurePassword1 = true;
+  bool _obscurePassword2 = true;
 
   @override
   void dispose() {
@@ -81,7 +83,15 @@ class _SignatureInputState extends State<SignatureSetupPage> {
       decoration: InputDecoration(
           contentPadding:
               EdgeInsets.only(left: 15, bottom: 11, top: 11, right: 15),
-          hintText: AppLocalizations.of(context)!.enterPassword),
+          hintText: AppLocalizations.of(context)!.enterPassword,
+          suffixIcon: IconButton(
+            icon: Icon(_obscurePassword1 ? Icons.visibility : Icons.visibility_off),
+            onPressed: () {
+              setState(() {
+                _obscurePassword1 = !_obscurePassword1;
+              });
+            },
+          )),
       // The validator receives the text that the user has entered.
       validator: (value) {
         if (value == null || value.isEmpty) {
@@ -89,7 +99,7 @@ class _SignatureInputState extends State<SignatureSetupPage> {
         }
         return null;
       },
-      obscureText: true,
+      obscureText: _obscurePassword1,
       enableSuggestions: false,
       autocorrect: false,
     );
@@ -102,7 +112,15 @@ class _SignatureInputState extends State<SignatureSetupPage> {
       decoration: InputDecoration(
           contentPadding:
               EdgeInsets.only(left: 15, bottom: 11, top: 11, right: 15),
-          hintText: AppLocalizations.of(context)!.enterSamePasswordAgain),
+          hintText: AppLocalizations.of(context)!.enterSamePasswordAgain,
+          suffixIcon: IconButton(
+            icon: Icon(_obscurePassword2 ? Icons.visibility : Icons.visibility_off),
+            onPressed: () {
+              setState(() {
+                _obscurePassword2 = !_obscurePassword2;
+              });
+            },
+          )),
       // The validator receives the text that the user has entered.
       validator: (value) {
         if (value == null ||
@@ -112,7 +130,7 @@ class _SignatureInputState extends State<SignatureSetupPage> {
         }
         return null;
       },
-      obscureText: true,
+      obscureText: _obscurePassword2,
       enableSuggestions: false,
       autocorrect: false,
     );

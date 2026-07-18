@@ -25,12 +25,15 @@ class ChangePasswordPage extends StatefulWidget {
   }
 }
 
-class _ChangePasswordPageState extends State {
+class _ChangePasswordPageState extends State<ChangePasswordPage> {
   final _formKey = GlobalKey<FormState>();
   final _origPasswordController = TextEditingController();
   final _newPassword1Controller = TextEditingController();
   final _newPassword2Controller = TextEditingController();
   bool _isBusy = false;
+  bool _obscureOrigPassword = true;
+  bool _obscureNewPassword1 = true;
+  bool _obscureNewPassword2 = true;
 
   final StreamController<int> _progressStreamController = StreamController<int>();
   late final Stream<int> _progressStream =
@@ -94,7 +97,15 @@ class _ChangePasswordPageState extends State {
       decoration: InputDecoration(
           contentPadding:
               EdgeInsets.only(left: 15, bottom: 11, top: 11, right: 15),
-          labelText: AppLocalizations.of(context)!.currentPassword),
+          labelText: AppLocalizations.of(context)!.currentPassword,
+          suffixIcon: IconButton(
+            icon: Icon(_obscureOrigPassword ? Icons.visibility : Icons.visibility_off),
+            onPressed: () {
+              setState(() {
+                _obscureOrigPassword = !_obscureOrigPassword;
+              });
+            },
+          )),
       // The validator receives the text that the user has entered.
       validator: (value) {
         if (value == null || value.isEmpty) {
@@ -102,7 +113,7 @@ class _ChangePasswordPageState extends State {
         }
         return null;
       },
-      obscureText: true,
+      obscureText: _obscureOrigPassword,
       enableSuggestions: false,
       autocorrect: false,
     );
@@ -116,7 +127,15 @@ class _ChangePasswordPageState extends State {
       decoration: InputDecoration(
           contentPadding:
               EdgeInsets.only(left: 15, bottom: 11, top: 11, right: 15),
-          labelText: AppLocalizations.of(context)!.newPassword),
+          labelText: AppLocalizations.of(context)!.newPassword,
+          suffixIcon: IconButton(
+            icon: Icon(_obscureNewPassword1 ? Icons.visibility : Icons.visibility_off),
+            onPressed: () {
+              setState(() {
+                _obscureNewPassword1 = !_obscureNewPassword1;
+              });
+            },
+          )),
       // The validator receives the text that the user has entered.
       validator: (value) {
         if (value == null || value.isEmpty) {
@@ -124,7 +143,7 @@ class _ChangePasswordPageState extends State {
         }
         return null;
       },
-      obscureText: true,
+      obscureText: _obscureNewPassword1,
       enableSuggestions: false,
       autocorrect: false,
     );
@@ -139,7 +158,15 @@ class _ChangePasswordPageState extends State {
       decoration: InputDecoration(
           contentPadding:
               EdgeInsets.only(left: 15, bottom: 11, top: 11, right: 15),
-          labelText: AppLocalizations.of(context)!.newPassword2),
+          labelText: AppLocalizations.of(context)!.newPassword2,
+          suffixIcon: IconButton(
+            icon: Icon(_obscureNewPassword2 ? Icons.visibility : Icons.visibility_off),
+            onPressed: () {
+              setState(() {
+                _obscureNewPassword2 = !_obscureNewPassword2;
+              });
+            },
+          )),
       // The validator receives the text that the user has entered.
       validator: (value) {
         if (value == null ||
@@ -149,7 +176,7 @@ class _ChangePasswordPageState extends State {
         }
         return null;
       },
-      obscureText: true,
+      obscureText: _obscureNewPassword2,
       enableSuggestions: false,
       autocorrect: false,
     );

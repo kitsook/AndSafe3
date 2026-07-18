@@ -67,7 +67,7 @@ class AuthService {
     }
 
     if (context.mounted) {
-      displayPasswordInputDialog();
+      await displayPasswordInputDialog();
     }
   }
 

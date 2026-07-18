@@ -29,6 +29,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   bool _isCreatingNewNote = false;
   int _refreshCounter = 0;
   bool _isBusy = false;
+  bool _authFlowCompleted = false;
 
   final GlobalKey<NoteEditState> _noteEditKey = GlobalKey<NoteEditState>();
   final GlobalKey<NoteListState> _noteListKey = GlobalKey<NoteListState>();
@@ -47,15 +48,19 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       refreshCounter: () => _refreshCounter,
       setRefreshCounter: (v) => _refreshCounter = v,
     );
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final arguments = ModalRoute.of(context)!.settings.arguments as Map?;
       if (arguments != null && arguments.containsKey('password')) {
         setState(() {
           _password = arguments['password'];
+          _authFlowCompleted = true;
         });
         _authService.offerBiometricEnrollment(arguments['password']);
       } else {
-        _authService.attemptBiometricUnlock();
+        await _authService.attemptBiometricUnlock();
+        setState(() {
+          _authFlowCompleted = true;
+        });
       }
     });
   }
@@ -118,6 +123,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                           key: _noteListKey,
                           password: _password,
                           refreshCounter: _refreshCounter,
+                          authFlowCompleted: _authFlowCompleted,
                           drawer: SafeArea(child: _buildMainDrawer()),
                           onPasswordRequested: () =>
                               _authService.displayPasswordInputDialog(),
@@ -167,6 +173,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     key: _noteListKey,
                     password: _password,
                     refreshCounter: _refreshCounter,
+                    authFlowCompleted: _authFlowCompleted,
                     drawer: SafeArea(child: _buildMainDrawer()),
                     onPasswordRequested: () =>
                         _authService.displayPasswordInputDialog(),

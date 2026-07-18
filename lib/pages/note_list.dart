@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:andsafe/l10n/app_localizations.dart';
@@ -19,6 +20,7 @@ class NoteList extends StatefulWidget {
   final VoidCallback? onPasswordRequested;
   final VoidCallback? onRefreshRequested;
   final int refreshCounter;
+  final bool authFlowCompleted;
 
   const NoteList({
     super.key,
@@ -29,6 +31,7 @@ class NoteList extends StatefulWidget {
     this.onPasswordRequested,
     this.onRefreshRequested,
     this.refreshCounter = 0,
+    this.authFlowCompleted = true,
   });
 
   @override
@@ -40,14 +43,40 @@ class NoteListState extends State<NoteList> {
   final _searchFieldController = TextEditingController();
   final _notesScrollController = ScrollController();
   int? _scrollTo;
+  bool _showTitle = true;
+  Timer? _titleTimer;
 
   @override
   void initState() {
     super.initState();
+    if (widget.authFlowCompleted) {
+      _startTitleTimer();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant NoteList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!oldWidget.authFlowCompleted && widget.authFlowCompleted) {
+      _startTitleTimer();
+    }
+  }
+
+  void _startTitleTimer() {
+    if (_titleTimer == null && _showTitle) {
+      _titleTimer = Timer(const Duration(seconds: 1), () {
+        if (mounted) {
+          setState(() {
+            _showTitle = false;
+          });
+        }
+      });
+    }
   }
 
   @override
   void dispose() {
+    _titleTimer?.cancel();
     _searchFieldController.dispose();
     _notesScrollController.dispose();
     super.dispose();
@@ -57,7 +86,21 @@ class NoteListState extends State<NoteList> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('AndSafe'),
+        title: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 500),
+          layoutBuilder: (Widget? currentChild, List<Widget> previousChildren) {
+            return Stack(
+              alignment: Alignment.centerLeft,
+              children: <Widget>[
+                ...previousChildren,
+                ?currentChild,
+              ],
+            );
+          },
+          child: _showTitle
+              ? Text('AndSafe', key: ValueKey('title'))
+              : _buildSearchField(context),
+        ),
         centerTitle: false,
         actions: <Widget>[
           _buildSortByIconButton(
@@ -79,10 +122,6 @@ class NoteListState extends State<NoteList> {
             },
           ),
         ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(60.0),
-          child: _buildSearchField(context),
-        ),
       ),
       drawer: widget.drawer,
       body: SizedBox.expand(
@@ -168,38 +207,31 @@ class NoteListState extends State<NoteList> {
   }
 
   Widget _buildSearchField(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(left: 10.0, right: 10.0, bottom: 10.0),
-      child: TextField(
-        autofocus: false,
-        controller: _searchFieldController,
-        style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
-        decoration: InputDecoration(
-          filled: true,
-          fillColor: Theme.of(context).colorScheme.surface,
-          isDense: true,
-          contentPadding: EdgeInsets.all(10),
-          prefixIcon: Icon(Icons.search_rounded),
-          prefixIconConstraints: BoxConstraints(
-            minWidth: 20,
-            minHeight: 20,
-          ),
-          suffixIcon: IconButton(
-            onPressed: () {
-              setState(() {
-                _searchFieldController.clear();
-              });
-            },
-            icon: Icon(Icons.clear_rounded),
-            iconSize: 20.0,
-          ),
-          hintText: AppLocalizations.of(context)!.searchTitle,
+    return TextField(
+      key: const ValueKey('search_field'),
+      autofocus: false,
+      controller: _searchFieldController,
+      style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+      decoration: InputDecoration(
+        hintText: AppLocalizations.of(context)!.searchTitle,
+        border: InputBorder.none,
+        hintStyle: TextStyle(
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
         ),
-        onChanged: (_) {
-          setState(() {});
-        },
+        suffixIcon: _searchFieldController.text.isNotEmpty
+            ? IconButton(
+                onPressed: () {
+                  setState(() {
+                    _searchFieldController.clear();
+                  });
+                },
+                icon: const Icon(Icons.clear_rounded),
+              )
+            : null,
       ),
+      onChanged: (_) {
+        setState(() {});
+      },
     );
   }
 

@@ -191,29 +191,97 @@ void main() {
   });
 
   group('NoteList - Search', () {
-    testWidgets('search field is present with hint text',
+    testWidgets('shows title initially, then fades in search field after 1 second',
         (WidgetTester tester) async {
       mockAdapter.notesToReturn = [];
       await tester.pumpWidget(buildTestApp());
       await pumpUntilReady(tester);
 
+      // Initially, the title is present, search field is absent
+      expect(find.text('AndSafe'), findsOneWidget);
+      expect(find.text('Search title...'), findsNothing);
+
+      // Advance time by 1 second
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+
+      // Title should fade out and search field should fade in
+      expect(find.text('AndSafe'), findsNothing);
       expect(find.text('Search title...'), findsOneWidget);
     });
 
-    testWidgets('search field has clear button', (WidgetTester tester) async {
+    testWidgets('does not fade out title if authFlowCompleted is false, then fades out when it becomes true',
+        (WidgetTester tester) async {
       mockAdapter.notesToReturn = [];
-      await tester.pumpWidget(buildTestApp());
+      
+      await tester.pumpWidget(Provider<NoteService>.value(
+        value: mockAdapter,
+        child: MaterialApp(
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: NoteList(
+            password: null,
+            authFlowCompleted: false,
+          ),
+        ),
+      ));
       await pumpUntilReady(tester);
 
-      expect(find.byIcon(Icons.clear_rounded), findsOneWidget);
+      // Verify title is shown and stays there even after 1 second
+      expect(find.text('AndSafe'), findsOneWidget);
+      expect(find.text('Search title...'), findsNothing);
+
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+
+      expect(find.text('AndSafe'), findsOneWidget);
+      expect(find.text('Search title...'), findsNothing);
+
+      // Now rebuild widget with authFlowCompleted = true
+      await tester.pumpWidget(Provider<NoteService>.value(
+        value: mockAdapter,
+        child: MaterialApp(
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: NoteList(
+            password: null,
+            authFlowCompleted: true,
+          ),
+        ),
+      ));
+
+      // Once authFlowCompleted becomes true, timer starts. Wait 1 second.
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+
+      // Title should now fade out and search field should fade in
+      expect(find.text('AndSafe'), findsNothing);
+      expect(find.text('Search title...'), findsOneWidget);
     });
 
-    testWidgets('search field has search icon', (WidgetTester tester) async {
+    testWidgets('search field has clear button when text is entered', (WidgetTester tester) async {
       mockAdapter.notesToReturn = [];
       await tester.pumpWidget(buildTestApp());
       await pumpUntilReady(tester);
 
-      expect(find.byIcon(Icons.search_rounded), findsOneWidget);
+      // Advance time by 1 second to show the search field
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.clear_rounded), findsNothing);
+
+      await tester.enterText(find.byType(TextField), 'test');
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.clear_rounded), findsOneWidget);
     });
   });
 

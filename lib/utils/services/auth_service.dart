@@ -200,48 +200,68 @@ class AuthService {
       await showDialog(
         context: context,
         builder: (context) {
-          return AlertDialog(
-            title: Text(AppLocalizations.of(context)!.enterYourPassword),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: controller,
-                  decoration: InputDecoration(
-                    labelText:
-                        AppLocalizations.of(context)!.passwordToDecryptYourNotes,
-                    suffixIcon: IconButton(
-                      icon: Icon(Icons.arrow_right_alt_rounded),
-                      onPressed: () {
-                        enteredPassword = controller.text;
+          bool obscureText = true;
+          return StatefulBuilder(
+            builder: (context, setState) {
+              return AlertDialog(
+                title: Text(AppLocalizations.of(context)!.enterYourPassword),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: controller,
+                      decoration: InputDecoration(
+                        labelText:
+                            AppLocalizations.of(context)!.passwordToDecryptYourNotes,
+                        suffixIcon: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: Icon(obscureText
+                                  ? Icons.visibility
+                                  : Icons.visibility_off),
+                              onPressed: () {
+                                setState(() {
+                                  obscureText = !obscureText;
+                                });
+                              },
+                            ),
+                            IconButton(
+                              icon: Icon(Icons.arrow_right_alt_rounded),
+                              onPressed: () {
+                                enteredPassword = controller.text;
+                                Navigator.pop(context);
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                      obscureText: obscureText,
+                      enableSuggestions: false,
+                      autocorrect: false,
+                      autofocus: true,
+                      textInputAction: TextInputAction.go,
+                      onSubmitted: (value) {
+                        enteredPassword = value;
                         Navigator.pop(context);
                       },
                     ),
-                  ),
-                  obscureText: true,
-                  enableSuggestions: false,
-                  autocorrect: false,
-                  autofocus: true,
-                  textInputAction: TextInputAction.go,
-                  onSubmitted: (value) {
-                    enteredPassword = value;
-                    Navigator.pop(context);
-                  },
+                    if (biometricEnabled) ...[
+                      SizedBox(height: 16),
+                      FilledButton.icon(
+                        onPressed: () {
+                          biometricPressed = true;
+                          Navigator.pop(context);
+                        },
+                        icon: Icon(Icons.fingerprint),
+                        label: Text(
+                            AppLocalizations.of(context)!.unlockWithBiometrics),
+                      ),
+                    ],
+                  ],
                 ),
-                if (biometricEnabled) ...[
-                  SizedBox(height: 16),
-                  FilledButton.icon(
-                    onPressed: () {
-                      biometricPressed = true;
-                      Navigator.pop(context);
-                    },
-                    icon: Icon(Icons.fingerprint),
-                    label: Text(
-                        AppLocalizations.of(context)!.unlockWithBiometrics),
-                  ),
-                ],
-              ],
-            ),
+              );
+            },
           );
         },
       );

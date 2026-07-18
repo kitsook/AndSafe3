@@ -41,6 +41,7 @@ class _ImportPageState extends State<_ImportPageInternal> {
   final _passwordController = TextEditingController();
   final _fileNameController = TextEditingController();
   bool _isBusy = false;
+  bool _obscurePassword = true;
 
   final StreamController<int> _importProgressStreamController =
       StreamController<int>();
@@ -143,7 +144,15 @@ class _ImportPageState extends State<_ImportPageInternal> {
           contentPadding:
               EdgeInsets.only(left: 15, bottom: 11, top: 11, right: 15),
           hintText:
-              AppLocalizations.of(context)!.passwordToDecryptImportedNotes),
+              AppLocalizations.of(context)!.passwordToDecryptImportedNotes,
+          suffixIcon: IconButton(
+            icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
+            onPressed: () {
+              setState(() {
+                _obscurePassword = !_obscurePassword;
+              });
+            },
+          )),
       // The validator receives the text that the user has entered.
       validator: (value) {
         if (value == null || value.isEmpty) {
@@ -151,7 +160,7 @@ class _ImportPageState extends State<_ImportPageInternal> {
         }
         return null;
       },
-      obscureText: true,
+      obscureText: _obscurePassword,
       enableSuggestions: false,
       autocorrect: false,
     );

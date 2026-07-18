@@ -141,10 +141,11 @@ Although exported notes are encrypted, you should still protect the backup file 
 <details>
 <summary><strong>Where are exported notes stored?</strong></summary>
 
-- **AndSafe v2:** `AndroidSafeExports/` under internal storage
-- **AndSafe3:** The app's scoped storage directory, e.g., `/storage/emulated/0/Android/data/net.clarenceho.andsafe3/files/Documents`
+- **AndSafe v2:** `AndroidSafeExports/` under internal storage.
+- **AndSafe3:** When you export, the app opens a **system directory picker** (Android's Storage Access Framework) so you choose the destination folder yourself. The exported file is an XML file named with a timestamp, e.g., `AndSafe20260717_230000.xml`.
 
-> ⚠️ **Important:** Uninstalling AndSafe3 will delete all exported files stored in the app directory.
+> [!NOTE]
+> On modern Android (11+), the directory picker may restrict access to certain root-level folders (e.g., the top-level `Download` directory). You can typically select a subfolder within `Documents` or other user directories. Files saved to user-owned folders will **persist even if the app is uninstalled**.
 </details>
 
 <details>

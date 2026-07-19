@@ -41,6 +41,11 @@
 
 #include "crypto_scrypt.h"
 
+#if defined(__ARM_NEON)
+#include <arm_neon.h>
+#endif
+
+
 static void blkcpy(void *, void *, size_t);
 static void blkxor(void *, void *, size_t);
 static void salsa20_8(uint32_t[16]);
@@ -79,6 +84,80 @@ blkxor(void * dest, void * src, size_t len)
 static void
 salsa20_8(uint32_t B[16])
 {
+#if defined(__ARM_NEON)
+	uint32x4_t v0 = vdupq_n_u32(0);
+	v0 = vsetq_lane_u32(B[0],  v0, 0);
+	v0 = vsetq_lane_u32(B[5],  v0, 1);
+	v0 = vsetq_lane_u32(B[10], v0, 2);
+	v0 = vsetq_lane_u32(B[15], v0, 3);
+
+	uint32x4_t v1 = vdupq_n_u32(0);
+	v1 = vsetq_lane_u32(B[4],  v1, 0);
+	v1 = vsetq_lane_u32(B[9],  v1, 1);
+	v1 = vsetq_lane_u32(B[14], v1, 2);
+	v1 = vsetq_lane_u32(B[3],  v1, 3);
+
+	uint32x4_t v2 = vdupq_n_u32(0);
+	v2 = vsetq_lane_u32(B[8],  v2, 0);
+	v2 = vsetq_lane_u32(B[13], v2, 1);
+	v2 = vsetq_lane_u32(B[2],  v2, 2);
+	v2 = vsetq_lane_u32(B[7],  v2, 3);
+
+	uint32x4_t v3 = vdupq_n_u32(0);
+	v3 = vsetq_lane_u32(B[12], v3, 0);
+	v3 = vsetq_lane_u32(B[1],  v3, 1);
+	v3 = vsetq_lane_u32(B[6],  v3, 2);
+	v3 = vsetq_lane_u32(B[11], v3, 3);
+
+#define ROTL(v, n) vorrq_u32(vshlq_n_u32(v, n), vshrq_n_u32(v, 32 - n))
+
+	int i;
+	for (i = 0; i < 8; i += 2) {
+		/* Operate on columns. */
+		v1 = veorq_u32(v1, ROTL(vaddq_u32(v0, v3), 7));
+		v2 = veorq_u32(v2, ROTL(vaddq_u32(v1, v0), 9));
+		v3 = veorq_u32(v3, ROTL(vaddq_u32(v2, v1), 13));
+		v0 = veorq_u32(v0, ROTL(vaddq_u32(v3, v2), 18));
+
+		/* Operate on rows. */
+		uint32x4_t v0_r = v0;
+		uint32x4_t v1_r = vextq_u32(v1, v1, 3);
+		uint32x4_t v2_r = vextq_u32(v2, v2, 2);
+		uint32x4_t v3_r = vextq_u32(v3, v3, 1);
+
+		v3_r = veorq_u32(v3_r, ROTL(vaddq_u32(v0_r, v1_r), 7));
+		v2_r = veorq_u32(v2_r, ROTL(vaddq_u32(v3_r, v0_r), 9));
+		v1_r = veorq_u32(v1_r, ROTL(vaddq_u32(v2_r, v3_r), 13));
+		v0_r = veorq_u32(v0_r, ROTL(vaddq_u32(v1_r, v2_r), 18));
+
+		v0 = v0_r;
+		v1 = vextq_u32(v1_r, v1_r, 1);
+		v2 = vextq_u32(v2_r, v2_r, 2);
+		v3 = vextq_u32(v3_r, v3_r, 3);
+	}
+
+#undef ROTL
+
+	B[0] += vgetq_lane_u32(v0, 0);
+	B[5] += vgetq_lane_u32(v0, 1);
+	B[10] += vgetq_lane_u32(v0, 2);
+	B[15] += vgetq_lane_u32(v0, 3);
+
+	B[4] += vgetq_lane_u32(v1, 0);
+	B[9] += vgetq_lane_u32(v1, 1);
+	B[14] += vgetq_lane_u32(v1, 2);
+	B[3] += vgetq_lane_u32(v1, 3);
+
+	B[8] += vgetq_lane_u32(v2, 0);
+	B[13] += vgetq_lane_u32(v2, 1);
+	B[2] += vgetq_lane_u32(v2, 2);
+	B[7] += vgetq_lane_u32(v2, 3);
+
+	B[12] += vgetq_lane_u32(v3, 0);
+	B[1] += vgetq_lane_u32(v3, 1);
+	B[6] += vgetq_lane_u32(v3, 2);
+	B[11] += vgetq_lane_u32(v3, 3);
+#else
 	uint32_t x[16];
 	size_t i;
 
@@ -114,7 +193,9 @@ salsa20_8(uint32_t B[16])
 	}
 	for (i = 0; i < 16; i++)
 		B[i] += x[i];
+#endif
 }
+
 
 /**
  * blockmix_salsa8(Bin, Bout, X, r):

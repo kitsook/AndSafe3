@@ -58,6 +58,8 @@ class _ImportPageState extends State<_ImportPageInternal> {
 
   @override
   void dispose() {
+    _passwordController.text = '';
+    _fileNameController.text = '';
     _importProgressStreamController.close();
     _passwordController.dispose();
     _fileNameController.dispose();
@@ -115,7 +117,8 @@ class _ImportPageState extends State<_ImportPageInternal> {
             children = <Widget>[
               CircularProgressIndicator(),
               SizedBox(height: 10),
-              Text('${AppLocalizations.of(context)!.importing} (${snapshot.data} / $_totalToImport)'),
+              Text(
+                  '${AppLocalizations.of(context)!.importing} (${snapshot.data} / $_totalToImport)'),
             ];
           } else {
             children = <Widget>[
@@ -146,7 +149,8 @@ class _ImportPageState extends State<_ImportPageInternal> {
           hintText:
               AppLocalizations.of(context)!.passwordToDecryptImportedNotes,
           suffixIcon: IconButton(
-            icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
+            icon: Icon(
+                _obscurePassword ? Icons.visibility : Icons.visibility_off),
             onPressed: () {
               setState(() {
                 _obscurePassword = !_obscurePassword;
@@ -197,7 +201,12 @@ class _ImportPageState extends State<_ImportPageInternal> {
             EdgeInsets.only(left: 15, bottom: 11, top: 11, right: 15),
         hintText: AppLocalizations.of(context)!.clickToChooseImportFile,
         errorStyle: TextStyle(
-          color: Theme.of(context).highlightColor, // or any other color
+          color: Theme.of(context).colorScheme.error,
+        ),
+        disabledBorder: UnderlineInputBorder(
+          borderSide: BorderSide(
+            color: Theme.of(context).disabledColor,
+          ),
         ),
       ),
       // The validator receives the text that the user has entered.
@@ -228,6 +237,7 @@ class _ImportPageState extends State<_ImportPageInternal> {
               final imported = parseNotesFromFile(_importFullPath!);
               importPasswordBytes =
                   Uint8List.fromList(utf8.encode(_passwordController.text));
+              _passwordController.text = '';
 
               final verifyResult =
                   await verifySignature(imported.item1, importPasswordBytes);
@@ -255,7 +265,7 @@ class _ImportPageState extends State<_ImportPageInternal> {
                     notesToInsert.add(importedNote);
                   } else {
                     // different password or different version. re-encrypt
-                    final decryptedBody = await getNotePlainBody(
+                    final decryptedBytes = await getNotePlainBytes(
                         importedNote, importPasswordBytes,
                         version: imported.item1.ver);
                     if (!mounted) return;
@@ -263,10 +273,11 @@ class _ImportPageState extends State<_ImportPageInternal> {
                         null,
                         importedNote.categoryId,
                         importedNote.title,
-                        decryptedBody,
+                        decryptedBytes,
                         widget._password,
                         version: currentSignatureVer,
                         lastUpdated: importedNote.lastUpdate);
+                    decryptedBytes.fillRange(0, decryptedBytes.length, 0);
                     if (!mounted) return;
                     notesToInsert.add(newNote);
                   }

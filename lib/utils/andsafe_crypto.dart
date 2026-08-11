@@ -91,14 +91,18 @@ Future<bool> verifySignature(
 }
 
 Future<Note> createNote(
-    int? id, int categoryId, String title, String plainText, Uint8List password,
+    int? id, int categoryId, String title, dynamic plainContent, Uint8List password,
     {required int version, DateTime? lastUpdated}) async {
   final Uint8List salt = _generateRandomBytes(_scryptSaltLength);
   final Uint8List iv = _generateRandomBytes(_aesIvLength);
 
   log.fine("Going to create an encrypted note");
+  final Uint8List plainTextBytes = plainContent is Uint8List
+      ? Uint8List.fromList(plainContent)
+      : Uint8List.fromList(utf8.encode(plainContent as String));
+
   Map data = {};
-  data['plainText'] = plainText;
+  data['plainTextBytes'] = plainTextBytes;
   data['password'] = password;
   data['salt'] = salt;
   data['iv'] = iv;
@@ -106,6 +110,8 @@ Future<Note> createNote(
   final ciphertext =
       bytesToHexString(await compute(_encrypt, data, debugLabel: "encrypt"));
   log.fine("Generated ciphertext");
+
+  plainTextBytes.fillRange(0, plainTextBytes.length, 0);
 
   return Note(
     id,
@@ -118,9 +124,9 @@ Future<Note> createNote(
   );
 }
 
-Future<String> getNotePlainBody(
+Future<Uint8List> getNotePlainBytes(
     Note note, Uint8List password, {required int version}) async {
-  log.fine("Going to decrypt note body");
+  log.fine("Going to decrypt note body bytes");
   Map data = {};
   data['ciphertext'] = hexStringToBytes(note.body);
   data['password'] = password;
@@ -128,15 +134,27 @@ Future<String> getNotePlainBody(
   data['iv'] = note.iv;
   data['version'] = version;
 
-  final String plainText = utf8.decode(
-      await compute(_decrypt, data, debugLabel: "decrypt"),
-      allowMalformed: true);
-  log.fine("Decrypted note body");
+  final Uint8List decryptedBytes =
+      await compute(_decrypt, data, debugLabel: "decrypt");
+  log.fine("Decrypted note body bytes");
+  return decryptedBytes;
+}
+
+Future<String> getNotePlainBody(
+    Note note, Uint8List password, {required int version}) async {
+  final Uint8List decryptedBytes =
+      await getNotePlainBytes(note, password, version: version);
+  final String plainText =
+      utf8.decode(decryptedBytes, allowMalformed: true);
+  decryptedBytes.fillRange(0, decryptedBytes.length, 0);
   return plainText;
 }
 
 Future<Uint8List> _encrypt(Map data) async {
-  final String plainText = data['plainText'];
+  final Uint8List plainTextBytes = data['plainTextBytes'] ??
+      (data['plainText'] is Uint8List
+          ? data['plainText']
+          : Uint8List.fromList(utf8.encode(data['plainText'] as String)));
   final Uint8List password = data['password'];
   final Uint8List salt = data['salt'];
   final Uint8List iv = data['iv'];
@@ -150,11 +168,12 @@ Future<Uint8List> _encrypt(Map data) async {
   log.fine("Going to init cipher");
   cipher.init(true, params);
   log.fine("Going to do actual encryption");
-  final result = cipher.process(utf8.encode(plainText));
+  final result = cipher.process(plainTextBytes);
 
-  // Zero out the isolate's copy of password and key
+  // Zero out the isolate's copy of password, key, and plaintext bytes
   password.fillRange(0, password.length, 0);
   key.fillRange(0, key.length, 0);
+  plainTextBytes.fillRange(0, plainTextBytes.length, 0);
 
   return result;
 }
@@ -189,13 +208,16 @@ Future<bool> _computeSignatureAndCompare(Map data) async {
   final Uint8List iv = data['iv'];
   final int version = data['version'];
 
+  Uint8List? plainBytes;
   try {
     if (payload.isEmpty) {
       return false;
     }
 
+    plainBytes = Uint8List.fromList(utf8.encode(plain));
+
     Map data = {};
-    data['plainText'] = plain;
+    data['plainTextBytes'] = plainBytes;
     data['password'] = password;
     data['salt'] = salt;
     data['iv'] = iv;
@@ -207,6 +229,8 @@ Future<bool> _computeSignatureAndCompare(Map data) async {
         signature.toUpperCase().substring(0, payload.length);
   } catch (e) {
     log.severe('Failed to verify password');
+  } finally {
+    plainBytes?.fillRange(0, plainBytes.length, 0);
   }
 
   return false;
@@ -235,19 +259,21 @@ Future<void> migrateAllNotes(
       await onProgress(i + 1, total);
       final note = notes[i];
 
-      // Decrypt with old params — runs on isolate, outside txn
-      String plaintext =
-          await getNotePlainBody(note, password, version: oldVersion);
+      // Decrypt with old params as Uint8List — runs on isolate, outside txn
+      Uint8List plainBytes =
+          await getNotePlainBytes(note, password, version: oldVersion);
 
       // Re-encrypt with new params — runs on isolate
       Note newNote = await createNote(
           note.id,
           note.categoryId,
           note.title,
-          plaintext,
+          plainBytes,
           password,
           version: currentSignatureVer,
           lastUpdated: note.lastUpdate);
+
+      plainBytes.fillRange(0, plainBytes.length, 0);
 
       // Save in place within transaction
       await noteService.updateNote(newNote, txn);
@@ -311,13 +337,16 @@ Future<Uint8List> _hashPassword(
     int errorCode = _nativeScrypt!(passwordBuffer, password.length, saltBuffer,
         salt.length, n, _scryptR, _scryptP, resultBuffer, length);
     if (errorCode == 0) {
-      return Uint8List.fromList(resultBuffer.asTypedList(length));
+      final keyBytes = Uint8List.fromList(resultBuffer.asTypedList(length));
+      resultBuffer.asTypedList(length).fillRange(0, length, 0);
+      return keyBytes;
     }
   } catch (e) {
     log.fine('Failed to use native scrypt');
     log.fine(e);
   } finally {
     if (saltBuffer != null) {
+      saltBuffer.asTypedList(salt.length).fillRange(0, salt.length, 0);
       calloc.free(saltBuffer);
     }
     if (passwordBuffer != null) {
@@ -327,6 +356,7 @@ Future<Uint8List> _hashPassword(
       calloc.free(passwordBuffer);
     }
     if (resultBuffer != null) {
+      resultBuffer.asTypedList(length).fillRange(0, length, 0);
       calloc.free(resultBuffer);
     }
   }

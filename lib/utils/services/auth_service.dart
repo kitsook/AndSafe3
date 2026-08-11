@@ -21,6 +21,8 @@ class AuthService {
   final int Function() refreshCounter;
   final void Function(int) setRefreshCounter;
 
+  final BiometricService _biometricService;
+
   AuthService({
     required this.context,
     required this.setState,
@@ -28,9 +30,8 @@ class AuthService {
     required this.setPassword,
     required this.refreshCounter,
     required this.setRefreshCounter,
-  });
-
-  final BiometricService _biometricService = BiometricService();
+    BiometricService? biometricService,
+  }) : _biometricService = biometricService ?? BiometricService();
 
   Future<void> attemptBiometricUnlock() async {
     final bool biometricEnabled = await _biometricService.isBiometricEnabled();
@@ -54,7 +55,6 @@ class AuthService {
           }
           return;
         } else {
-          passwordBytes!.fillRange(0, passwordBytes.length, 0);
           await _biometricService.clearStoredPassword();
         }
       } catch (e) {
@@ -187,90 +187,22 @@ class AuthService {
   }
 
   Future<void> displayPasswordInputDialog() async {
-    String? enteredPassword;
-    bool? biometricPressed;
     final bool biometricEnabled = await _biometricService.isBiometricEnabled();
 
     while (true) {
-      var controller = TextEditingController();
-      enteredPassword = null;
-      biometricPressed = null;
-
       if (!context.mounted) return;
-      await showDialog(
+      final PasswordInputDialogResult? result =
+          await showDialog<PasswordInputDialogResult>(
         context: context,
-        builder: (context) {
-          bool obscureText = true;
-          return StatefulBuilder(
-            builder: (context, setState) {
-              return AlertDialog(
-                title: Text(AppLocalizations.of(context)!.enterYourPassword),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: controller,
-                      decoration: InputDecoration(
-                        labelText:
-                            AppLocalizations.of(context)!.passwordToDecryptYourNotes,
-                        suffixIcon: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: Icon(obscureText
-                                  ? Icons.visibility
-                                  : Icons.visibility_off),
-                              onPressed: () {
-                                setState(() {
-                                  obscureText = !obscureText;
-                                });
-                              },
-                            ),
-                            IconButton(
-                              icon: Icon(Icons.arrow_right_alt_rounded),
-                              onPressed: () {
-                                enteredPassword = controller.text;
-                                Navigator.pop(context);
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                      obscureText: obscureText,
-                      enableSuggestions: false,
-                      autocorrect: false,
-                      autofocus: true,
-                      textInputAction: TextInputAction.go,
-                      onSubmitted: (value) {
-                        enteredPassword = value;
-                        Navigator.pop(context);
-                      },
-                    ),
-                    if (biometricEnabled) ...[
-                      SizedBox(height: 16),
-                      FilledButton.icon(
-                        onPressed: () {
-                          biometricPressed = true;
-                          Navigator.pop(context);
-                        },
-                        icon: Icon(Icons.fingerprint),
-                        label: Text(
-                            AppLocalizations.of(context)!.unlockWithBiometrics),
-                      ),
-                    ],
-                  ],
-                ),
-              );
-            },
-          );
-        },
+        builder: (context) =>
+            PasswordInputDialog(biometricEnabled: biometricEnabled),
       );
 
-      if (enteredPassword == null && biometricPressed == null) {
+      if (result == null) {
         return;
       }
 
-      if (biometricPressed == true) {
+      if (result.isBiometric) {
         if (!context.mounted) continue;
         setState(() {
           setIsBusy(true);
@@ -323,7 +255,7 @@ class AuthService {
 
       Uint8List? passwordBytes;
       try {
-        passwordBytes = Uint8List.fromList(utf8.encode(enteredPassword!));
+        passwordBytes = Uint8List.fromList(utf8.encode(result.password!));
         final success = await unlockWithPassword(passwordBytes);
         if (!context.mounted) return;
         if (success) {
@@ -348,5 +280,104 @@ class AuthService {
         });
       }
     }
+  }
+}
+
+class PasswordInputDialogResult {
+  final String? password;
+  final bool isBiometric;
+
+  const PasswordInputDialogResult.password(this.password)
+      : isBiometric = false;
+  const PasswordInputDialogResult.biometric()
+      : password = null,
+        isBiometric = true;
+}
+
+class PasswordInputDialog extends StatefulWidget {
+  final bool biometricEnabled;
+
+  const PasswordInputDialog({super.key, required this.biometricEnabled});
+
+  @override
+  State<PasswordInputDialog> createState() => _PasswordInputDialogState();
+}
+
+class _PasswordInputDialogState extends State<PasswordInputDialog> {
+  late final TextEditingController _controller;
+  bool _obscureText = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _controller.clear();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final text = _controller.text;
+    Navigator.pop(context, PasswordInputDialogResult.password(text));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(AppLocalizations.of(context)!.enterYourPassword),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _controller,
+            decoration: InputDecoration(
+              labelText:
+                  AppLocalizations.of(context)!.passwordToDecryptYourNotes,
+              suffixIcon: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: Icon(_obscureText
+                        ? Icons.visibility
+                        : Icons.visibility_off),
+                    onPressed: () {
+                      setState(() {
+                        _obscureText = !_obscureText;
+                      });
+                    },
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.arrow_right_alt_rounded),
+                    onPressed: _submit,
+                  ),
+                ],
+              ),
+            ),
+            obscureText: _obscureText,
+            enableSuggestions: false,
+            autocorrect: false,
+            autofocus: true,
+            textInputAction: TextInputAction.go,
+            onSubmitted: (_) => _submit(),
+          ),
+          if (widget.biometricEnabled) ...[
+            SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: () {
+                Navigator.pop(
+                    context, const PasswordInputDialogResult.biometric());
+              },
+              icon: Icon(Icons.fingerprint),
+              label: Text(
+                  AppLocalizations.of(context)!.unlockWithBiometrics),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 }

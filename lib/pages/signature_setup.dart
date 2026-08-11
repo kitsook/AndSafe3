@@ -32,6 +32,8 @@ class _SignatureInputState extends State<SignatureSetupPage> {
 
   @override
   void dispose() {
+    _password1Controller.text = '';
+    _password2Controller.text = '';
     _password1Controller.dispose();
     _password2Controller.dispose();
     super.dispose();
@@ -154,6 +156,8 @@ class _SignatureInputState extends State<SignatureSetupPage> {
             try {
               passwordBytes =
                   Uint8List.fromList(utf8.encode(_password1Controller.text));
+              _password1Controller.text = '';
+              _password2Controller.text = '';
               Signature signature = await createSignature(passwordBytes);
               if (!mounted) return;
               final signatureService = Provider.of<SignatureService>(context, listen: false);

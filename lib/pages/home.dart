@@ -65,11 +65,23 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     });
   }
 
+  // Re-entrancy flag for _globalWipe.
+  // In Dart's single-threaded event loop model, synchronous statements run to
+  // completion without thread preemption. However, when an async operation pauses
+  // at an `await` point (e.g. `saveIfNeeded()`), subsequent lifecycle events (such as
+  // `AppLifecycleState.paused` immediately following `hidden`) could invoke _globalWipe()
+  // again concurrently. _isWiping prevents re-entrant executions while an async wipe is pending.
   bool _isWiping = false;
 
   Future<void> _globalWipe() async {
     if (_isWiping) return;
     _isWiping = true;
+
+    // Atomically capture the master password buffer to a local stack reference and
+    // immediately clear the field (_password = null). Because Dart executes synchronous
+    // statements without preemption before the first `await`, this handoff is fully atomic.
+    // Operating on the local `password` variable avoids race conditions and null-check
+    // exceptions across `await saveIfNeeded()`, and guarantees deterministic zeroing in `finally`.
     final password = _password;
     _password = null;
 

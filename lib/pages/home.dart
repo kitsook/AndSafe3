@@ -65,24 +65,60 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     });
   }
 
+  bool _isWiping = false;
+
+  Future<void> _globalWipe() async {
+    if (_isWiping) return;
+    _isWiping = true;
+    final password = _password;
+    _password = null;
+
+    try {
+      if (password != null) {
+        try {
+          await _noteEditKey.currentState?.saveIfNeeded();
+        } catch (e) {
+          log.warning('Auto-save during global wipe failed: $e');
+        } finally {
+          _noteEditKey.currentState?.wipePlaintext();
+          password.fillRange(0, password.length, 0);
+        }
+      }
+
+      _authService.lockSession(onWipeComplete: () {
+        if (mounted) {
+          setState(() {
+            _selectedNoteId = null;
+            _isCreatingNewNote = false;
+            _refreshCounter++;
+          });
+        }
+      });
+
+      if (mounted && Navigator.of(context).canPop()) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
+    } finally {
+      _isWiping = false;
+    }
+  }
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    if (_password != null) {
-      _password!.fillRange(0, _password!.length, 0);
-      _password = null;
-    }
+    _globalWipe();
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.detached) {
-      if (_password != null) {
-        _password!.fillRange(0, _password!.length, 0);
-        setState(() {
-          _password = null;
-        });
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden ||
+        state == AppLifecycleState.detached) {
+      _globalWipe();
+    } else if (state == AppLifecycleState.resumed) {
+      if (_password == null && _authFlowCompleted) {
+        _authService.attemptBiometricUnlock();
       }
     }
   }
@@ -254,11 +290,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             displaySnackBarMsg(
                 context: context,
                 msg: AppLocalizations.of(context)!.passwordChanged);
-            setState(() {
-              _password?.fillRange(0, _password!.length, 0);
-              _password = null;
-              _refreshCounter++;
-            });
+            _globalWipe();
             _authService.displayPasswordInputDialog();
           } else {
             displaySnackBarMsg(
@@ -318,11 +350,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               msg: AppLocalizations.of(context)!.failedToExport);
         }
       },
-      onExitApp: () {
-        if (_password != null) {
-          _password!.fillRange(0, _password!.length, 0);
-        }
-        _password = null;
+      onExitApp: () async {
+        await _globalWipe();
         // exit(0) terminates the process, destroying all in-memory state
         // including the native flutter_secure_storage biometric session cache.
         // This is intentional for a security app — "Exit" should guarantee

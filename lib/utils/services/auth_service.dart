@@ -33,6 +33,14 @@ class AuthService {
     BiometricService? biometricService,
   }) : _biometricService = biometricService ?? BiometricService();
 
+  /// Securely purges in-memory authentication credentials and triggers state cleanup.
+  void lockSession({VoidCallback? onWipeComplete}) {
+    setPassword(null);
+    if (onWipeComplete != null) {
+      onWipeComplete();
+    }
+  }
+
   Future<void> attemptBiometricUnlock() async {
     final bool biometricEnabled = await _biometricService.isBiometricEnabled();
     if (biometricEnabled) {

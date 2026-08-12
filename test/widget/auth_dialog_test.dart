@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:andsafe/l10n/app_localizations.dart';
 import 'package:andsafe/utils/services/auth_service.dart';
 import 'package:flutter/material.dart';
@@ -150,6 +152,47 @@ void main() {
       expect(result, isNotNull);
       expect(result!.isBiometric, isTrue);
       expect(result!.password, isNull);
+    });
+  });
+
+  group('AuthService - Session-Based Purging', () {
+    testWidgets('lockSession purges password and triggers wipe callback', (WidgetTester tester) async {
+      Uint8List? activePassword = Uint8List.fromList([1, 2, 3, 4]);
+      bool wipeCallbackCalled = false;
+
+      await tester.pumpWidget(
+        buildTestApp(
+          child: Builder(
+            builder: (context) {
+              final authService = AuthService(
+                context: context,
+                setState: (fn) => fn(),
+                setIsBusy: (_) {},
+                setPassword: (p) => activePassword = p,
+                refreshCounter: () => 0,
+                setRefreshCounter: (_) {},
+              );
+
+              return ElevatedButton(
+                onPressed: () {
+                  authService.lockSession(onWipeComplete: () {
+                    wipeCallbackCalled = true;
+                  });
+                },
+                child: const Text('Lock'),
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(activePassword, isNotNull);
+      await tester.tap(find.text('Lock'));
+      await tester.pumpAndSettle();
+
+      expect(activePassword, isNull);
+      expect(wipeCallbackCalled, isTrue);
     });
   });
 }

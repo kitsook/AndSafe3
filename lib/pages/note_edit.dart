@@ -101,14 +101,25 @@ class NoteEditState extends State<NoteEdit> {
     }
   }
 
+  /// Securely clears and zeroes any in-memory plaintext buffers and editing state.
+  void wipePlaintext() {
+    _scaffoldMessenger?.clearSnackBars();
+    titleFieldController.text = '';
+    bodyFieldController.text = '';
+    _originalTitle = '';
+    _originalBody = '';
+    _selectedCategory = 0;
+    _originalCategory = 0;
+    _hasStartedEditing = false;
+    _isUndoSnackbarShowing = false;
+  }
+
   @override
   void didUpdateWidget(NoteEdit oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.id != oldWidget.id) {
-      // Clear editing state from the previous note before loading the new one.
-      _scaffoldMessenger?.clearSnackBars();
-      _isUndoSnackbarShowing = false;
-      _hasStartedEditing = false;
+      // Securely clear editing state from the previous note before loading the new one.
+      wipePlaintext();
       _forcePop = false;
       _loadNoteFuture = _loadTheNote();
     }
@@ -116,12 +127,7 @@ class NoteEditState extends State<NoteEdit> {
 
   @override
   void dispose() {
-    _scaffoldMessenger?.clearSnackBars();
-    // Clear decrypted content from memory before disposing
-    titleFieldController.text = '';
-    bodyFieldController.text = '';
-    _originalTitle = '';
-    _originalBody = '';
+    wipePlaintext();
     titleFieldController.dispose();
     bodyFieldController.dispose();
     super.dispose();

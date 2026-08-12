@@ -242,4 +242,46 @@ void main() {
       expect(deletedId, equals(42));
     });
   });
+
+  group('NoteEdit - Memory Safety & Scoped Lifecycle', () {
+    testWidgets('wipePlaintext clears title and body controllers and state',
+        (WidgetTester tester) async {
+      final key = GlobalKey<NoteEditState>();
+      await tester.pumpWidget(
+        Provider<NoteService>.value(
+          value: mockAdapter,
+          child: MaterialApp(
+            localizationsDelegates: [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: NoteEdit(
+              key: key,
+              id: null,
+              password: Uint8List.fromList([1, 2, 3, 4]),
+              signatureVer: currentSignatureVer,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Enter title and body text
+      await tester.enterText(find.byType(TextField).first, 'Confidential Title');
+      await tester.enterText(find.byType(TextField).last, 'Top Secret Plaintext Body');
+      await tester.pumpAndSettle();
+
+      expect(key.currentState?.titleFieldController.text, 'Confidential Title');
+      expect(key.currentState?.bodyFieldController.text, 'Top Secret Plaintext Body');
+
+      // Call wipePlaintext
+      key.currentState?.wipePlaintext();
+      await tester.pumpAndSettle();
+
+      expect(key.currentState?.titleFieldController.text, isEmpty);
+      expect(key.currentState?.bodyFieldController.text, isEmpty);
+    });
+  });
 }

@@ -160,22 +160,24 @@ Future<Uint8List> _encrypt(Map data) async {
   final Uint8List iv = data['iv'];
   final int version = data['version'];
 
-  final Uint8List key = await _hashPassword(salt, password, _aesKeyLength, version);
+  Uint8List? key;
+  try {
+    key = await _hashPassword(salt, password, _aesKeyLength, version);
 
-  CipherParameters params = PaddedBlockCipherParameters(
-      ParametersWithIV<KeyParameter>(KeyParameter(key), iv), null);
-  final cipher = PaddedBlockCipher('AES/CBC/PKCS7');
-  log.fine("Going to init cipher");
-  cipher.init(true, params);
-  log.fine("Going to do actual encryption");
-  final result = cipher.process(plainTextBytes);
-
-  // Zero out the isolate's copy of password, key, and plaintext bytes
-  password.fillRange(0, password.length, 0);
-  key.fillRange(0, key.length, 0);
-  plainTextBytes.fillRange(0, plainTextBytes.length, 0);
-
-  return result;
+    CipherParameters params = PaddedBlockCipherParameters(
+        ParametersWithIV<KeyParameter>(KeyParameter(key), iv), null);
+    final cipher = PaddedBlockCipher('AES/CBC/PKCS7');
+    log.fine("Going to init cipher");
+    cipher.init(true, params);
+    log.fine("Going to do actual encryption");
+    final result = cipher.process(plainTextBytes);
+    return result;
+  } finally {
+    // Zero out the isolate's copy of password, key, and plaintext bytes
+    password.fillRange(0, password.length, 0);
+    key?.fillRange(0, key.length, 0);
+    plainTextBytes.fillRange(0, plainTextBytes.length, 0);
+  }
 }
 
 Future<Uint8List> _decrypt(Map data) async {
@@ -185,19 +187,21 @@ Future<Uint8List> _decrypt(Map data) async {
   final Uint8List iv = data['iv'];
   final int version = data['version'];
 
-  final Uint8List key = await _hashPassword(salt, password, _aesKeyLength, version);
+  Uint8List? key;
+  try {
+    key = await _hashPassword(salt, password, _aesKeyLength, version);
 
-  CipherParameters params = PaddedBlockCipherParameters(
-      ParametersWithIV<KeyParameter>(KeyParameter(key), iv), null);
-  final cipher = PaddedBlockCipher('AES/CBC/PKCS7');
-  cipher.init(false, params);
-  final result = cipher.process(ciphertext);
-
-  // Zero out the isolate's copy of password and key
-  password.fillRange(0, password.length, 0);
-  key.fillRange(0, key.length, 0);
-
-  return result;
+    CipherParameters params = PaddedBlockCipherParameters(
+        ParametersWithIV<KeyParameter>(KeyParameter(key), iv), null);
+    final cipher = PaddedBlockCipher('AES/CBC/PKCS7');
+    cipher.init(false, params);
+    final result = cipher.process(ciphertext);
+    return result;
+  } finally {
+    // Zero out the isolate's copy of password and key
+    password.fillRange(0, password.length, 0);
+    key?.fillRange(0, key.length, 0);
+  }
 }
 
 Future<bool> _computeSignatureAndCompare(Map data) async {
@@ -365,8 +369,11 @@ Future<Uint8List> _hashPassword(
   log.fine("Deriving key...");
   final kd = KeyDerivator('scrypt');
   kd.init(ScryptParameters(n, _scryptR, _scryptP, length, salt));
-  final result = kd.process(password);
-  password.fillRange(0, password.length, 0);
-  log.fine("Key derived");
-  return result;
+  try {
+    final result = kd.process(password);
+    log.fine("Key derived");
+    return result;
+  } finally {
+    password.fillRange(0, password.length, 0);
+  }
 }

@@ -68,6 +68,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    if (_password != null) {
+      _password!.fillRange(0, _password!.length, 0);
+      _password = null;
+    }
     super.dispose();
   }
 

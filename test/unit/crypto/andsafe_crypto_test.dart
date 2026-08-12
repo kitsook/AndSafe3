@@ -115,6 +115,53 @@ void main() {
 
       expect(note1.body, isNot(equals(note2.body)));
     });
+
+    test('createNote with Uint8List plaintext and getNotePlainBytes round-trip', () async {
+      final password = Uint8List.fromList(utf8.encode('bytepass123'));
+      final rawBytes = Uint8List.fromList(utf8.encode('Byte array secret payload \ud83d\udd10'));
+
+      final note = await createNote(
+        null, 2, 'Byte Note', rawBytes, password, version: 4,
+      );
+
+      expect(note.title, 'Byte Note');
+      expect(note.categoryId, 2);
+      expect(note.id, isNull);
+
+      final decryptedBytes = await getNotePlainBytes(note, password, version: 4);
+      expect(utf8.decode(decryptedBytes), 'Byte array secret payload \ud83d\udd10');
+      decryptedBytes.fillRange(0, decryptedBytes.length, 0);
+    });
+
+    test('createNote with raw arbitrary binary bytes round-trips correctly', () async {
+      final password = Uint8List.fromList(utf8.encode('pass'));
+      final binaryPayload = Uint8List.fromList([0x00, 0xFF, 0xFE, 0x12, 0x34, 0x89, 0xAA, 0x55]);
+
+      final note = await createNote(null, 1, 'Bin Note', binaryPayload, password, version: 4);
+      final decrypted = await getNotePlainBytes(note, password, version: 4);
+
+      expect(decrypted, equals(binaryPayload));
+      decrypted.fillRange(0, decrypted.length, 0);
+      expect(decrypted.every((b) => b == 0), isTrue);
+    });
+
+    test('createNote throws TypeError for unsupported plainContent type', () async {
+      final password = Uint8List.fromList(utf8.encode('pass'));
+
+      expect(
+        () => createNote(null, 0, 'Invalid', 12345, password, version: 4),
+        throwsA(isA<TypeError>()),
+      );
+    });
+
+    test('getNotePlainBody zeroes decrypted byte buffer', () async {
+      final password = Uint8List.fromList(utf8.encode('testzero'));
+      final note = await createNote(
+        null, 0, 'Zero Note', 'Secret to zero', password, version: 4,
+      );
+      final plainText = await getNotePlainBody(note, password, version: 4);
+      expect(plainText, 'Secret to zero');
+    });
   });
 
   group('createSignature / verifySignature', () {

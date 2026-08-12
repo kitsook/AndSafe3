@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:andsafe/l10n/app_localizations.dart';
@@ -132,9 +133,12 @@ class NoteEditState extends State<NoteEdit> {
       Note? note = await noteService.getNote(widget.id!);
       if (note != null) {
         titleFieldController.text = note.title;
-        bodyFieldController.text =
-            await getNotePlainBody(note, widget.password,
+        final Uint8List plainBytes =
+            await getNotePlainBytes(note, widget.password,
                 version: widget.signatureVer);
+        bodyFieldController.text =
+            utf8.decode(plainBytes, allowMalformed: true);
+        plainBytes.fillRange(0, plainBytes.length, 0);
         _selectedCategory = note.categoryId;
 
         _originalTitle = note.title;
@@ -230,12 +234,14 @@ class NoteEditState extends State<NoteEdit> {
         : titleFieldController.text;
     final currentBody =
         bodyFieldController.text.isEmpty ? "\n" : bodyFieldController.text;
+    Uint8List? bodyBytes;
     try {
+      bodyBytes = Uint8List.fromList(utf8.encode(currentBody));
       Note theNote = await createNote(
         widget.id,
         _selectedCategory,
         currentTitle,
-        currentBody,
+        bodyBytes,
         widget.password,
         version: currentSignatureVer,
       );
@@ -256,6 +262,8 @@ class NoteEditState extends State<NoteEdit> {
           context: context,
           msg: AppLocalizations.of(context)!.failedToSaveTheNote);
       return null;
+    } finally {
+      bodyBytes?.fillRange(0, bodyBytes.length, 0);
     }
   }
 

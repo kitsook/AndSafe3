@@ -31,7 +31,7 @@ Tuple2<Signature, List<Note>> parseNotesFromFile(String theFileName) {
     throw FormatException("Cannot find signature in import file");
   }
   importedSignature = _parseSignatureRow(signatureRow);
-  log.fine(importedSignature);
+  log.fine("Successfully parsed signature from import file");
 
   // parse notes
   final Iterable<XmlElement> noteRows = document

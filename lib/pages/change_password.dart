@@ -44,6 +44,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
 
   @override
   void dispose() {
+    _origPasswordController.text = '';
+    _newPassword1Controller.text = '';
+    _newPassword2Controller.text = '';
     _origPasswordController.dispose();
     _newPassword1Controller.dispose();
     _newPassword2Controller.dispose();
@@ -99,7 +102,8 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
               EdgeInsets.only(left: 15, bottom: 11, top: 11, right: 15),
           labelText: AppLocalizations.of(context)!.currentPassword,
           suffixIcon: IconButton(
-            icon: Icon(_obscureOrigPassword ? Icons.visibility : Icons.visibility_off),
+            icon: Icon(
+                _obscureOrigPassword ? Icons.visibility : Icons.visibility_off),
             onPressed: () {
               setState(() {
                 _obscureOrigPassword = !_obscureOrigPassword;
@@ -129,7 +133,8 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
               EdgeInsets.only(left: 15, bottom: 11, top: 11, right: 15),
           labelText: AppLocalizations.of(context)!.newPassword,
           suffixIcon: IconButton(
-            icon: Icon(_obscureNewPassword1 ? Icons.visibility : Icons.visibility_off),
+            icon: Icon(
+                _obscureNewPassword1 ? Icons.visibility : Icons.visibility_off),
             onPressed: () {
               setState(() {
                 _obscureNewPassword1 = !_obscureNewPassword1;
@@ -160,7 +165,8 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
               EdgeInsets.only(left: 15, bottom: 11, top: 11, right: 15),
           labelText: AppLocalizations.of(context)!.newPassword2,
           suffixIcon: IconButton(
-            icon: Icon(_obscureNewPassword2 ? Icons.visibility : Icons.visibility_off),
+            icon: Icon(
+                _obscureNewPassword2 ? Icons.visibility : Icons.visibility_off),
             onPressed: () {
               setState(() {
                 _obscureNewPassword2 = !_obscureNewPassword2;
@@ -195,6 +201,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
             Uint8List.fromList(utf8.encode(_origPasswordController.text));
         newPassword =
             Uint8List.fromList(utf8.encode(_newPassword1Controller.text));
+        _origPasswordController.text = '';
+        _newPassword1Controller.text = '';
+        _newPassword2Controller.text = '';
 
         final noteService = Provider.of<NoteService>(context, listen: false);
         final signatureService = Provider.of<SignatureService>(context, listen: false);
@@ -218,15 +227,18 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
             await signatureService.generateSignature(newSignature, txn);
             for (var note in allNotes) {
               _progressStreamController.add(++_currentlyReEncrypting);
+              Uint8List plainBytes = await getNotePlainBytes(
+                  note, currentPassword!,
+                  version: signature!.ver);
               Note newNote = await createNote(
                   note.id,
                   note.categoryId,
                   note.title,
-                  await getNotePlainBody(note, currentPassword!,
-                      version: signature!.ver),
+                  plainBytes,
                   newPassword!,
                   version: currentSignatureVer,
                   lastUpdated: note.lastUpdate);
+              plainBytes.fillRange(0, plainBytes.length, 0);
               await noteService.updateNote(newNote, txn);
             }
           });

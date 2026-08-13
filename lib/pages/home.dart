@@ -23,7 +23,7 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
+class _HomePageState extends State<HomePage> {
   Uint8List? _password;
   int? _selectedNoteId;
   bool _isCreatingNewNote = false;
@@ -39,7 +39,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     _authService = AuthService(
       context: context,
       setState: (fn) => setState(fn),
@@ -68,9 +67,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   // Re-entrancy flag for _globalWipe.
   // In Dart's single-threaded event loop model, synchronous statements run to
   // completion without thread preemption. However, when an async operation pauses
-  // at an `await` point (e.g. `saveIfNeeded()`), subsequent lifecycle events (such as
-  // `AppLifecycleState.paused` immediately following `hidden`) could invoke _globalWipe()
-  // again concurrently. _isWiping prevents re-entrant executions while an async wipe is pending.
+  // at an `await` point (e.g. `saveIfNeeded()`), _isWiping prevents re-entrant executions.
   bool _isWiping = false;
 
   Future<void> _globalWipe() async {
@@ -117,22 +114,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
     _globalWipe();
     super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.hidden ||
-        state == AppLifecycleState.detached) {
-      _globalWipe();
-    } else if (state == AppLifecycleState.resumed) {
-      if (_password == null && _authFlowCompleted) {
-        _authService.attemptBiometricUnlock();
-      }
-    }
   }
 
   @override

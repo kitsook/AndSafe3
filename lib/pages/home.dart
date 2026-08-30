@@ -103,10 +103,6 @@ class _HomePageState extends State<HomePage> {
           });
         }
       });
-
-      if (mounted && Navigator.of(context).canPop()) {
-        Navigator.of(context).popUntil((route) => route.isFirst);
-      }
     } finally {
       _isWiping = false;
     }
@@ -114,7 +110,14 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void dispose() {
-    _globalWipe();
+    // Synchronous-only cleanup. Cannot use async _globalWipe() here because
+    // super.dispose() runs immediately after, tearing down the widget tree
+    // before any awaited operations (like saveIfNeeded) could complete.
+    _noteEditKey.currentState?.wipePlaintext();
+    if (_password != null) {
+      _password!.fillRange(0, _password!.length, 0);
+      _password = null;
+    }
     super.dispose();
   }
 
@@ -279,13 +282,14 @@ class _HomePageState extends State<HomePage> {
       },
       onChangePassword: () {
         Navigator.of(context).pop();
-        Navigator.pushNamed(context, 'password/change').then((value) {
+        Navigator.pushNamed(context, 'password/change').then((value) async {
           if (!mounted) return;
           if (value != null && value as bool) {
             displaySnackBarMsg(
                 context: context,
                 msg: AppLocalizations.of(context)!.passwordChanged);
-            _globalWipe();
+            await _globalWipe();
+            if (!mounted) return;
             _authService.displayPasswordInputDialog();
           } else {
             displaySnackBarMsg(

@@ -179,13 +179,13 @@ class _ImportPageState extends State<_ImportPageInternal> {
         ],
       ),
       onTap: () async {
-        FilePickerResult? result = await FilePicker.pickFiles(
+        PlatformFile? result = await FilePicker.pickFile(
           type: FileType.custom,
           allowedExtensions: ['xml'],
         );
-        if (result != null && result.files.single.path != null) {
-          _importFullPath = result.files.single.path;
-          _fileNameController.text = result.files.single.name;
+        if (result != null && result.path != null) {
+          _importFullPath = result.path;
+          _fileNameController.text = result.name;
         }
       },
     );
